@@ -33,3 +33,5 @@ export const POLICIES_DISK = new StateDefinition("policies", "disk");
 export const POLICIES_MEMORY = new StateDefinition("policies", "memory");
 export const PROVIDERS_DISK = new StateDefinition("providers", "disk");
 //
+
+export const AUTOFILL_SETTINGS_DISK = new StateDefinition("autoFillSettings", "disk");
