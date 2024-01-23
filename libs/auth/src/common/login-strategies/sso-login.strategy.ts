@@ -20,7 +20,18 @@ import { StateService } from "@bitwarden/common/platform/abstractions/state.serv
 
 import { SsoLoginCredentials } from "../models/domain/login-credentials";
 
-import { LoginStrategy } from "./login.strategy";
+import { LoginStrategy, StrategyData } from "./login.strategy";
+
+class SsoStrategyData extends StrategyData {
+  tokenRequest: SsoTokenRequest;
+  orgId: string;
+
+  // A session token server side to serve as an authentication factor for the user
+  // in order to send email OTPs to the user's configured 2FA email address
+  // as we don't have a master password hash or other verifiable secret when using SSO.
+  ssoEmail2FaSessionToken?: string;
+  email?: string; // email not preserved through SSO process so get from server
+}
 
 export class SsoLoginStrategy extends LoginStrategy {
   tokenRequest: SsoTokenRequest;

@@ -23,7 +23,19 @@ import { MasterKey } from "@bitwarden/common/types/key";
 import { LoginStrategyServiceAbstraction } from "../abstractions";
 import { PasswordLoginCredentials } from "../models/domain/login-credentials";
 
-import { LoginStrategy } from "./login.strategy";
+import { LoginStrategy, StrategyData } from "./login.strategy";
+import { GlobalState } from "@bitwarden/common/platform/state";
+
+export class PasswordLoginStrategyData extends StrategyData {
+  tokenRequest: PasswordTokenRequest;
+  localMasterKeyHash: string;
+  masterKey: MasterKey;
+  /**
+   * Options to track if the user needs to update their password due to a password that does not meet an organization's
+   * master password policy.
+   */
+  forcePasswordResetReason: ForceSetPasswordReason;
+}
 
 export class PasswordLoginStrategy extends LoginStrategy {
   get email() {
@@ -46,6 +58,7 @@ export class PasswordLoginStrategy extends LoginStrategy {
   private forcePasswordResetReason: ForceSetPasswordReason = ForceSetPasswordReason.None;
 
   constructor(
+    private cache: GlobalState<PasswordLoginStrategyData>,
     cryptoService: CryptoService,
     apiService: ApiService,
     tokenService: TokenService,
@@ -76,7 +89,12 @@ export class PasswordLoginStrategy extends LoginStrategy {
     twoFactor: TokenTwoFactorRequest,
     captchaResponse: string,
   ): Promise<AuthResult> {
-    this.tokenRequest.captchaResponse = captchaResponse ?? this.captchaBypassToken;
+    this.cache.update((data) =>
+      Object.assign(data, {
+        tokenRequest: { captchaResponse: captchaResponse ?? this.captchaBypassToken },
+      }),
+    );
+    // this.tokenRequest.captchaResponse = captchaResponse ?? this.captchaBypassToken;
     const result = await super.logInTwoFactor(twoFactor);
 
     // 2FA was successful, save the force update password options with the state service if defined

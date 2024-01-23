@@ -43,6 +43,17 @@ import {
   AuthRequestLoginCredentials,
   WebAuthnLoginCredentials,
 } from "../../models";
+import { KeyDefinition, LOGIN_STRATEGY_MEMORY, StateProvider } from "@bitwarden/common/platform/state";
+import { StrategyData } from "../../login-strategies/login.strategy";
+
+const LOGIN_STRATEGY = new KeyDefinition<StrategyData>(LOGIN_STRATEGY_MEMORY, "loginStrategyCache", {
+  deserializer: (strategyData) => {
+    switch (strategyData.type) {
+    case AuthenticationType.Sso:
+
+    }
+});
+
 
 const sessionTimeoutLength = 2 * 60 * 1000; // 2 minutes
 
@@ -111,6 +122,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     protected policyService: PolicyService,
     protected deviceTrustCryptoService: DeviceTrustCryptoServiceAbstraction,
     protected authReqCryptoService: AuthRequestCryptoServiceAbstraction,
+    protected stateProvider: StateProvider,
   ) {}
 
   async logIn(
@@ -133,6 +145,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     switch (credentials.type) {
       case AuthenticationType.Password:
         strategy = new PasswordLoginStrategy(
+          this.stateProvider.getGlobal(LOGIN_STRATEGY),
           this.cryptoService,
           this.apiService,
           this.tokenService,

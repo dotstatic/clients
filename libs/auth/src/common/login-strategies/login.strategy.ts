@@ -39,6 +39,25 @@ import {
 
 type IdentityResponse = IdentityTokenResponse | IdentityTwoFactorResponse | IdentityCaptchaResponse;
 
+export abstract class StrategyData {
+  tokenRequest:
+    | UserApiTokenRequest
+    | PasswordTokenRequest
+    | SsoTokenRequest
+    | WebAuthnLoginTokenRequest;
+  captchaBypassToken: string;
+}
+
+export type LoginStrategyData = {
+  tokenRequest:
+    | UserApiTokenRequest
+    | PasswordTokenRequest
+    | SsoTokenRequest
+    | WebAuthnLoginTokenRequest;
+
+  captchaBypassToken: string;
+};
+
 export abstract class LoginStrategy {
   protected abstract tokenRequest:
     | UserApiTokenRequest
@@ -58,6 +77,8 @@ export abstract class LoginStrategy {
     protected stateService: StateService,
     protected twoFactorService: TwoFactorService,
   ) {}
+
+  // abstract exportStrategyData(): StrategyData;
 
   abstract logIn(
     credentials:
