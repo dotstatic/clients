@@ -31,6 +31,14 @@ const AUTO_FILL_ON_PAGE_LOAD_CALLOUT_DISMISSED = new KeyDefinition(
   },
 );
 
+const ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY = new KeyDefinition(
+  AUTOFILL_SETTINGS_DISK,
+  "activateAutoFillOnPageLoadFromPolicy",
+  {
+    deserializer: (value: boolean) => value ?? false,
+  },
+);
+
 export abstract class AutofillSettingsServiceAbstraction {
   autofillOnLoad$: Observable<boolean>;
   setAutofillOnPageLoad: (newValue: boolean) => Promise<void>;
@@ -40,6 +48,8 @@ export abstract class AutofillSettingsServiceAbstraction {
   setAutoCopyTotp: (newValue: boolean) => Promise<void>;
   autoFillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
   setAutoFillOnPageLoadCalloutIsDismissed: (newValue: boolean) => Promise<void>;
+  activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
+  setActivateAutoFillOnPageLoadFromPolicy: (newValue: boolean) => Promise<void>;
 }
 
 export class AutofillSettingsService implements AutofillSettingsServiceAbstraction {
@@ -54,6 +64,9 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
 
   private autoFillOnPageLoadCalloutIsDismissedState: ActiveUserState<boolean>;
   readonly autoFillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
+
+  private activateAutoFillOnPageLoadFromPolicyState: ActiveUserState<boolean>;
+  readonly activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
 
   constructor(private stateProvider: StateProvider) {
     this.autofillOnLoadState = this.stateProvider.getActive(AUTOFILL_ON_PAGE_LOAD);
@@ -72,6 +85,12 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
     );
     this.autoFillOnPageLoadCalloutIsDismissed$ =
       this.autoFillOnPageLoadCalloutIsDismissedState.state$.pipe(map((x) => x ?? false));
+
+    this.activateAutoFillOnPageLoadFromPolicyState = this.stateProvider.getActive(
+      ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY,
+    );
+    this.activateAutoFillOnPageLoadFromPolicy$ =
+      this.activateAutoFillOnPageLoadFromPolicyState.state$.pipe(map((x) => x ?? false));
   }
 
   async setAutofillOnPageLoad(newValue: boolean): Promise<void> {
@@ -88,5 +107,9 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
 
   async setAutoFillOnPageLoadCalloutIsDismissed(newValue: boolean): Promise<void> {
     await this.autoFillOnPageLoadCalloutIsDismissedState.update(() => newValue);
+  }
+
+  async setActivateAutoFillOnPageLoadFromPolicy(newValue: boolean): Promise<void> {
+    await this.activateAutoFillOnPageLoadFromPolicyState.update(() => newValue);
   }
 }

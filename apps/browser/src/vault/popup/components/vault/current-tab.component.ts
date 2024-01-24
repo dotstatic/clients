@@ -124,9 +124,9 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
       .subscribe(() => this.searchVault());
 
     // activate autofill on page load if policy is set
-    if (await this.stateService.getActivateAutoFillOnPageLoadFromPolicy()) {
+    if (await firstValueFrom(this.autofillSettingsService.activateAutoFillOnPageLoadFromPolicy$)) {
       await this.autofillSettingsService.setAutofillOnPageLoad(true);
-      await this.stateService.setActivateAutoFillOnPageLoadFromPolicy(false);
+      await this.autofillSettingsService.setActivateAutoFillOnPageLoadFromPolicy(false);
       this.platformUtilsService.showToast(
         "info",
         null,
