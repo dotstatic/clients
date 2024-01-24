@@ -1,10 +1,11 @@
 import { ChangeDetectorRef, Component, NgZone, OnDestroy, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
-import { Subject } from "rxjs";
+import { Subject, firstValueFrom } from "rxjs";
 import { debounceTime, takeUntil } from "rxjs/operators";
 
 import { SearchService } from "@bitwarden/common/abstractions/search.service";
 import { OrganizationService } from "@bitwarden/common/admin-console/abstractions/organization/organization.service.abstraction";
+import { AutofillSettingsServiceAbstraction } from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { BroadcasterService } from "@bitwarden/common/platform/abstractions/broadcaster.service";
 import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
 import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/platform-utils.service";
@@ -65,6 +66,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
     private syncService: SyncService,
     private searchService: SearchService,
     private stateService: StateService,
+    private autofillSettingsService: AutofillSettingsServiceAbstraction,
     private passwordRepromptService: PasswordRepromptService,
     private organizationService: OrganizationService,
     private vaultFilterService: VaultFilterService,
@@ -123,7 +125,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
 
     // activate autofill on page load if policy is set
     if (await this.stateService.getActivateAutoFillOnPageLoadFromPolicy()) {
-      await this.stateService.setEnableAutoFillOnPageLoad(true);
+      await this.autofillSettingsService.setAutofillOnPageLoad(true);
       await this.stateService.setActivateAutoFillOnPageLoadFromPolicy(false);
       this.platformUtilsService.showToast(
         "info",
@@ -310,7 +312,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
     this.showHowToAutofill =
       this.loginCiphers.length > 0 &&
       (await this.stateService.getAutoFillOverlayVisibility()) === AutofillOverlayVisibility.Off &&
-      !(await this.stateService.getEnableAutoFillOnPageLoad()) &&
+      !(await firstValueFrom(this.autofillSettingsService.autofillOnLoad$)) &&
       !(await this.stateService.getDismissedAutofillCallout());
 
     if (this.showHowToAutofill) {

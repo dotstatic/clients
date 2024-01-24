@@ -10,6 +10,7 @@ import { AuditService } from "@bitwarden/common/abstractions/audit.service";
 import { EventCollectionService } from "@bitwarden/common/abstractions/event/event-collection.service";
 import { OrganizationService } from "@bitwarden/common/admin-console/abstractions/organization/organization.service.abstraction";
 import { PolicyService } from "@bitwarden/common/admin-console/abstractions/policy/policy.service.abstraction";
+import { AutofillSettingsServiceAbstraction } from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
 import { LogService } from "@bitwarden/common/platform/abstractions/log.service";
 import { MessagingService } from "@bitwarden/common/platform/abstractions/messaging.service";
@@ -54,6 +55,7 @@ export class AddEditComponent extends BaseAddEditComponent {
     platformUtilsService: PlatformUtilsService,
     auditService: AuditService,
     stateService: StateService,
+    private autofillSettingsService: AutofillSettingsServiceAbstraction,
     collectionService: CollectionService,
     messagingService: MessagingService,
     private route: ActivatedRoute,
@@ -159,7 +161,7 @@ export class AddEditComponent extends BaseAddEditComponent {
     await super.load();
     this.showAutoFillOnPageLoadOptions =
       this.cipher.type === CipherType.Login &&
-      (await this.stateService.getEnableAutoFillOnPageLoad());
+      (await firstValueFrom(this.autofillSettingsService.autofillOnLoad$));
   }
 
   async submit(): Promise<boolean> {
