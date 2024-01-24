@@ -39,6 +39,10 @@ import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor
 import { UserVerificationService } from "@bitwarden/common/auth/abstractions/user-verification/user-verification.service.abstraction";
 import { AuthService } from "@bitwarden/common/auth/services/auth.service";
 import { LoginService } from "@bitwarden/common/auth/services/login.service";
+import {
+  AutofillSettingsService,
+  AutofillSettingsServiceAbstraction,
+} from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { AppIdService } from "@bitwarden/common/platform/abstractions/app-id.service";
 import { ConfigApiServiceAbstraction } from "@bitwarden/common/platform/abstractions/config/config-api.service.abstraction";
 import { CryptoFunctionService } from "@bitwarden/common/platform/abstractions/crypto-function.service";
@@ -67,7 +71,7 @@ import { GlobalState } from "@bitwarden/common/platform/models/domain/global-sta
 import { ConfigService } from "@bitwarden/common/platform/services/config/config.service";
 import { ConsoleLogService } from "@bitwarden/common/platform/services/console-log.service";
 import { ContainerService } from "@bitwarden/common/platform/services/container.service";
-import { DerivedStateProvider } from "@bitwarden/common/platform/state";
+import { DerivedStateProvider, StateProvider } from "@bitwarden/common/platform/state";
 import { SearchService } from "@bitwarden/common/services/search.service";
 import { PasswordGenerationServiceAbstraction } from "@bitwarden/common/tools/generator/password";
 import { UsernameGenerationServiceAbstraction } from "@bitwarden/common/tools/generator/username";
@@ -563,6 +567,11 @@ function getBgService<T>(service: keyof MainBackground) {
       provide: DerivedStateProvider,
       useClass: ForegroundDerivedStateProvider,
       deps: [OBSERVABLE_MEMORY_STORAGE],
+    },
+    {
+      provide: AutofillSettingsServiceAbstraction,
+      useClass: AutofillSettingsService,
+      deps: [StateProvider],
     },
   ],
 })
