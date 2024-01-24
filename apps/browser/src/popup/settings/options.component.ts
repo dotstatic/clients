@@ -86,8 +86,9 @@ export class OptionsComponent implements OnInit {
       this.autofillSettingsService.autofillOnLoad$,
     );
 
-    this.autoFillOnPageLoadDefault =
-      (await this.stateService.getAutoFillOnPageLoadDefault()) ?? true;
+    this.autoFillOnPageLoadDefault = await firstValueFrom(
+      this.autofillSettingsService.autofillOnLoadDefault$,
+    );
 
     this.enableAddLoginNotification = !(await this.stateService.getDisableAddLoginNotification());
 
@@ -143,7 +144,7 @@ export class OptionsComponent implements OnInit {
   }
 
   async updateAutoFillOnPageLoadDefault() {
-    await this.stateService.setAutoFillOnPageLoadDefault(this.autoFillOnPageLoadDefault);
+    await this.autofillSettingsService.setAutofillOnPageLoadDefault(this.autoFillOnPageLoadDefault);
   }
 
   async updateFavicon() {

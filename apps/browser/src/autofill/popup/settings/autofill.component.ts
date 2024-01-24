@@ -88,8 +88,9 @@ export class AutofillComponent implements OnInit {
       this.autofillSettingsService.autofillOnLoad$,
     );
 
-    this.autoFillOnPageLoadDefault =
-      (await this.stateService.getAutoFillOnPageLoadDefault()) ?? true;
+    this.autoFillOnPageLoadDefault = await firstValueFrom(
+      this.autofillSettingsService.autofillOnLoadDefault$,
+    );
 
     const defaultUriMatch = await this.stateService.getDefaultUriMatch();
     this.defaultUriMatch = defaultUriMatch == null ? UriMatchType.Domain : defaultUriMatch;
@@ -111,7 +112,7 @@ export class AutofillComponent implements OnInit {
   }
 
   async updateAutoFillOnPageLoadDefault() {
-    await this.stateService.setAutoFillOnPageLoadDefault(this.autoFillOnPageLoadDefault);
+    await this.autofillSettingsService.setAutofillOnPageLoadDefault(this.autoFillOnPageLoadDefault);
   }
 
   async saveDefaultUriMatch() {
