@@ -309,9 +309,13 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
   }
 
   private async setCallout() {
+    const inlineMenuVisibilityIsOff =
+      (await firstValueFrom(this.autofillSettingsService.inlineMenuVisibility$)) ===
+      AutofillOverlayVisibility.Off;
+
     this.showHowToAutofill =
       this.loginCiphers.length > 0 &&
-      (await this.stateService.getAutoFillOverlayVisibility()) === AutofillOverlayVisibility.Off &&
+      inlineMenuVisibilityIsOff &&
       !(await firstValueFrom(this.autofillSettingsService.autofillOnLoad$)) &&
       !(await firstValueFrom(this.autofillSettingsService.autoFillOnPageLoadCalloutIsDismissed$));
 

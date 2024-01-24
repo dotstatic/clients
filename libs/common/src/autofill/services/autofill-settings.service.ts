@@ -1,6 +1,10 @@
 import { Observable, map } from "rxjs";
 
 import {
+  AutofillOverlayVisibility,
+  InlineMenuVisibilitySetting,
+} from "../../../../../apps/browser/src/autofill/utils/autofill-overlay.enum";
+import {
   AUTOFILL_SETTINGS_DISK,
   ActiveUserState,
   KeyDefinition,
@@ -39,6 +43,10 @@ const ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY = new KeyDefinition(
   },
 );
 
+const INLINE_MENU_VISIBILITY = new KeyDefinition(AUTOFILL_SETTINGS_DISK, "inlineMenuVisibility", {
+  deserializer: (value: InlineMenuVisibilitySetting) => value ?? AutofillOverlayVisibility.Off,
+});
+
 export abstract class AutofillSettingsServiceAbstraction {
   autofillOnLoad$: Observable<boolean>;
   setAutofillOnPageLoad: (newValue: boolean) => Promise<void>;
@@ -50,6 +58,8 @@ export abstract class AutofillSettingsServiceAbstraction {
   setAutoFillOnPageLoadCalloutIsDismissed: (newValue: boolean) => Promise<void>;
   activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
   setActivateAutoFillOnPageLoadFromPolicy: (newValue: boolean) => Promise<void>;
+  inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
+  setInlineMenuVisibility: (newValue: InlineMenuVisibilitySetting) => Promise<void>;
 }
 
 export class AutofillSettingsService implements AutofillSettingsServiceAbstraction {
@@ -67,6 +77,9 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
 
   private activateAutoFillOnPageLoadFromPolicyState: ActiveUserState<boolean>;
   readonly activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
+
+  private inlineMenuVisibilityState: ActiveUserState<InlineMenuVisibilitySetting>;
+  readonly inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
 
   constructor(private stateProvider: StateProvider) {
     this.autofillOnLoadState = this.stateProvider.getActive(AUTOFILL_ON_PAGE_LOAD);
@@ -91,6 +104,11 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
     );
     this.activateAutoFillOnPageLoadFromPolicy$ =
       this.activateAutoFillOnPageLoadFromPolicyState.state$.pipe(map((x) => x ?? false));
+
+    this.inlineMenuVisibilityState = this.stateProvider.getActive(INLINE_MENU_VISIBILITY);
+    this.inlineMenuVisibility$ = this.inlineMenuVisibilityState.state$.pipe(
+      map((x) => x ?? AutofillOverlayVisibility.Off),
+    );
   }
 
   async setAutofillOnPageLoad(newValue: boolean): Promise<void> {
@@ -111,5 +129,9 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
 
   async setActivateAutoFillOnPageLoadFromPolicy(newValue: boolean): Promise<void> {
     await this.activateAutoFillOnPageLoadFromPolicyState.update(() => newValue);
+  }
+
+  async setInlineMenuVisibility(newValue: InlineMenuVisibilitySetting): Promise<void> {
+    await this.inlineMenuVisibilityState.update(() => newValue);
   }
 }

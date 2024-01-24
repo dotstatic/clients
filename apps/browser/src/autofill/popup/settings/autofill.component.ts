@@ -12,7 +12,10 @@ import { DialogService } from "@bitwarden/components";
 import { BrowserApi } from "../../../platform/browser/browser-api";
 import { enableAccountSwitching } from "../../../platform/flags";
 import { AutofillService } from "../../services/abstractions/autofill.service";
-import { AutofillOverlayVisibility } from "../../utils/autofill-overlay.enum";
+import {
+  AutofillOverlayVisibility,
+  InlineMenuVisibilitySetting,
+} from "../../utils/autofill-overlay.enum";
 
 @Component({
   selector: "app-autofill",
@@ -21,7 +24,7 @@ import { AutofillOverlayVisibility } from "../../utils/autofill-overlay.enum";
 export class AutofillComponent implements OnInit {
   protected canOverrideBrowserAutofillSetting = false;
   protected defaultBrowserAutofillDisabled = false;
-  protected autoFillOverlayVisibility: number;
+  protected autoFillOverlayVisibility: InlineMenuVisibilitySetting;
   protected autoFillOverlayVisibilityOptions: any[];
   protected disablePasswordManagerLink: string;
   enableAutoFillOnPageLoad = false;
@@ -81,8 +84,9 @@ export class AutofillComponent implements OnInit {
 
     this.defaultBrowserAutofillDisabled = await this.browserAutofillSettingCurrentlyOverridden();
 
-    this.autoFillOverlayVisibility =
-      (await this.settingsService.getAutoFillOverlayVisibility()) || AutofillOverlayVisibility.Off;
+    this.autoFillOverlayVisibility = await firstValueFrom(
+      this.autofillSettingsService.inlineMenuVisibility$,
+    );
 
     this.enableAutoFillOnPageLoad = await firstValueFrom(
       this.autofillSettingsService.autofillOnLoad$,
@@ -100,9 +104,10 @@ export class AutofillComponent implements OnInit {
   }
 
   async updateAutoFillOverlayVisibility() {
-    const previousAutoFillOverlayVisibility =
-      await this.settingsService.getAutoFillOverlayVisibility();
-    await this.settingsService.setAutoFillOverlayVisibility(this.autoFillOverlayVisibility);
+    const previousAutoFillOverlayVisibility = await firstValueFrom(
+      this.autofillSettingsService.inlineMenuVisibility$,
+    );
+    await this.autofillSettingsService.setInlineMenuVisibility(this.autoFillOverlayVisibility);
     await this.handleUpdatingAutofillOverlayContentScripts(previousAutoFillOverlayVisibility);
     await this.requestPrivacyPermission();
   }
