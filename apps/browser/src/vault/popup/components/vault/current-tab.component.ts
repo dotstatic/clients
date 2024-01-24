@@ -304,7 +304,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
   }
 
   async dismissCallout() {
-    await this.stateService.setDismissedAutofillCallout(true);
+    await this.autofillSettingsService.setAutoFillOnPageLoadCalloutIsDismissed(true);
     this.showHowToAutofill = false;
   }
 
@@ -313,7 +313,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
       this.loginCiphers.length > 0 &&
       (await this.stateService.getAutoFillOverlayVisibility()) === AutofillOverlayVisibility.Off &&
       !(await firstValueFrom(this.autofillSettingsService.autofillOnLoad$)) &&
-      !(await this.stateService.getDismissedAutofillCallout());
+      !(await firstValueFrom(this.autofillSettingsService.autoFillOnPageLoadCalloutIsDismissed$));
 
     if (this.showHowToAutofill) {
       const autofillCommand = await this.platformUtilsService.getAutofillKeyboardShortcut();
