@@ -1,6 +1,7 @@
 import { Directive, Inject, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, NavigationExtras, Router } from "@angular/router";
 import * as DuoWebSDK from "duo_web_sdk";
+import { firstValueFrom } from "rxjs";
 import { first } from "rxjs/operators";
 
 // eslint-disable-next-line no-restricted-imports
@@ -9,6 +10,7 @@ import { LoginStrategyServiceAbstraction } from "@bitwarden/auth/common";
 import { ApiService } from "@bitwarden/common/abstractions/api.service";
 import { LoginService } from "@bitwarden/common/auth/abstractions/login.service";
 import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor.service";
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 import { TwoFactorProviderType } from "@bitwarden/common/auth/enums/two-factor-provider-type";
 import { AuthResult } from "@bitwarden/common/auth/models/domain/auth-result";
 import { ForceSetPasswordReason } from "@bitwarden/common/auth/models/domain/force-set-password-reason";
@@ -78,7 +80,7 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
   }
 
   async ngOnInit() {
-    if (!this.authing || this.twoFactorService.getProviders() == null) {
+    if (!(await this.authing()) || this.twoFactorService.getProviders() == null) {
       this.router.navigate([this.loginRoute]);
       return;
     }
@@ -89,7 +91,7 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
       }
     });
 
-    if (this.needsLock) {
+    if (await this.needsLock()) {
       this.successRoute = "lock";
     }
 
@@ -375,7 +377,7 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
       return;
     }
 
-    if (this.loginStrategyService.email == null) {
+    if ((await this.loginStrategyService.getEmail()) == null) {
       this.platformUtilsService.showToast(
         "error",
         this.i18nService.t("errorOccurred"),
@@ -386,9 +388,10 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
 
     try {
       const request = new TwoFactorEmailRequest();
-      request.email = this.loginStrategyService.email;
-      request.masterPasswordHash = this.loginStrategyService.masterPasswordHash;
-      request.ssoEmail2FaSessionToken = this.loginStrategyService.ssoEmail2FaSessionToken;
+      request.email = await this.loginStrategyService.getEmail();
+      request.masterPasswordHash = await this.loginStrategyService.getMasterPasswordHash();
+      request.ssoEmail2FaSessionToken =
+        await this.loginStrategyService.getSsoEmail2FaSessionToken();
       request.deviceIdentifier = await this.appIdService.getAppId();
       request.authRequestAccessCode = this.loginStrategyService.accessCode;
       request.authRequestId = this.loginStrategyService.authRequestId;
@@ -425,19 +428,12 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
     }
   }
 
-  get authing(): boolean {
-    return (
-      this.loginStrategyService.authingWithPassword() ||
-      this.loginStrategyService.authingWithSso() ||
-      this.loginStrategyService.authingWithUserApiKey() ||
-      this.loginStrategyService.authingWithPasswordless()
-    );
+  private async authing(): Promise<boolean> {
+    return (await firstValueFrom(this.loginStrategyService.currentAuthType$)) !== null;
   }
 
-  get needsLock(): boolean {
-    return (
-      this.loginStrategyService.authingWithSso() ||
-      this.loginStrategyService.authingWithUserApiKey()
-    );
+  private async needsLock(): Promise<boolean> {
+    const authType = await firstValueFrom(this.loginStrategyService.currentAuthType$);
+    return authType == AuthenticationType.Sso || authType == AuthenticationType.UserApi;
   }
 }

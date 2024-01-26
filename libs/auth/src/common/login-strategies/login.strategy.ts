@@ -1,6 +1,7 @@
 import { ApiService } from "@bitwarden/common/abstractions/api.service";
 import { TokenService } from "@bitwarden/common/auth/abstractions/token.service";
 import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor.service";
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 import { TwoFactorProviderType } from "@bitwarden/common/auth/enums/two-factor-provider-type";
 import { AuthResult } from "@bitwarden/common/auth/models/domain/auth-result";
 import { ForceSetPasswordReason } from "@bitwarden/common/auth/models/domain/force-set-password-reason";
@@ -28,6 +29,8 @@ import {
   AccountTokens,
   AccountDecryptionOptions,
 } from "@bitwarden/common/platform/models/domain/account";
+import { GlobalState } from "@bitwarden/common/platform/state";
+import { firstValueFrom } from "rxjs";
 
 import {
   UserApiLoginCredentials,
@@ -39,26 +42,19 @@ import {
 
 type IdentityResponse = IdentityTokenResponse | IdentityTwoFactorResponse | IdentityCaptchaResponse;
 
-export abstract class StrategyData {
-  tokenRequest:
-    | UserApiTokenRequest
-    | PasswordTokenRequest
-    | SsoTokenRequest
-    | WebAuthnLoginTokenRequest;
-  captchaBypassToken: string;
-}
-
 export type LoginStrategyData = {
-  tokenRequest:
+  readonly type: AuthenticationType;
+  tokenRequest?:
     | UserApiTokenRequest
     | PasswordTokenRequest
     | SsoTokenRequest
     | WebAuthnLoginTokenRequest;
 
-  captchaBypassToken: string;
+  captchaBypassToken?: string;
 };
 
 export abstract class LoginStrategy {
+  protected cache: GlobalState<LoginStrategyData>;
   protected abstract tokenRequest:
     | UserApiTokenRequest
     | PasswordTokenRequest
@@ -78,8 +74,6 @@ export abstract class LoginStrategy {
     protected twoFactorService: TwoFactorService,
   ) {}
 
-  // abstract exportStrategyData(): StrategyData;
-
   abstract logIn(
     credentials:
       | UserApiLoginCredentials
@@ -93,7 +87,8 @@ export abstract class LoginStrategy {
     twoFactor: TokenTwoFactorRequest,
     captchaResponse: string = null,
   ): Promise<AuthResult> {
-    this.tokenRequest.setTwoFactor(twoFactor);
+    const tokenRequest = (await firstValueFrom(this.cache.state$)).tokenRequest;
+    tokenRequest.setTwoFactor(twoFactor);
     const [authResult] = await this.startLogIn();
     return authResult;
   }

@@ -4,6 +4,7 @@ import { DeviceTrustCryptoServiceAbstraction } from "@bitwarden/common/auth/abst
 import { KeyConnectorService } from "@bitwarden/common/auth/abstractions/key-connector.service";
 import { TokenService } from "@bitwarden/common/auth/abstractions/token.service";
 import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor.service";
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 import { ForceSetPasswordReason } from "@bitwarden/common/auth/models/domain/force-set-password-reason";
 import { SsoTokenRequest } from "@bitwarden/common/auth/models/request/identity-token/sso-token.request";
 import { AuthRequestResponse } from "@bitwarden/common/auth/models/response/auth-request.response";
@@ -17,33 +18,55 @@ import { LogService } from "@bitwarden/common/platform/abstractions/log.service"
 import { MessagingService } from "@bitwarden/common/platform/abstractions/messaging.service";
 import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/platform-utils.service";
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
+import { GlobalState } from "@bitwarden/common/platform/state";
+import { Observable, map, firstValueFrom } from "rxjs";
 
 import { SsoLoginCredentials } from "../models/domain/login-credentials";
+import { LoginStrategyData, LoginStrategy } from "./login.strategy";
 
-import { LoginStrategy, StrategyData } from "./login.strategy";
-
-class SsoStrategyData extends StrategyData {
+export class SsoLoginStrategyData implements LoginStrategyData {
+  readonly type = AuthenticationType.Sso;
+  captchaBypassToken: string;
   tokenRequest: SsoTokenRequest;
+  /**
+   * User email address.
+   */
+  email?: string;
+  /**
+   * The organization ID that the user is logging into. Used for Key Connector
+   * purposes after authentication.
+   */
   orgId: string;
-
-  // A session token server side to serve as an authentication factor for the user
-  // in order to send email OTPs to the user's configured 2FA email address
-  // as we don't have a master password hash or other verifiable secret when using SSO.
+  /**
+   * A token provided by the server as an authentication factor for sending
+   * email OTPs to the user's configured 2FA email address. This is required
+   * as we don't have a master password hash or other verifiable secret when using SSO.
+   */
   ssoEmail2FaSessionToken?: string;
-  email?: string; // email not preserved through SSO process so get from server
+
+  constructor(init?: Partial<SsoLoginStrategyData>) {
+    Object.assign(this, init);
+  }
 }
 
 export class SsoLoginStrategy extends LoginStrategy {
   tokenRequest: SsoTokenRequest;
-  orgId: string;
 
-  // A session token server side to serve as an authentication factor for the user
-  // in order to send email OTPs to the user's configured 2FA email address
-  // as we don't have a master password hash or other verifiable secret when using SSO.
-  ssoEmail2FaSessionToken?: string;
-  email?: string; // email not preserved through SSO process so get from server
+  /**
+   * @see {@link SsoLoginStrategyData.email}
+   */
+  email$: Observable<string | null>;
+  /**
+   * @see {@link SsoLoginStrategyData.orgId}
+   */
+  orgId$: Observable<string>;
+  /**
+   * @see {@link SsoLoginStrategyData.ssoEmail2FaSessionToken}
+   */
+  ssoEmail2FaSessionToken$: Observable<string | null>;
 
   constructor(
+    protected cache: GlobalState<SsoLoginStrategyData>,
     cryptoService: CryptoService,
     apiService: ApiService,
     tokenService: TokenService,
@@ -69,10 +92,16 @@ export class SsoLoginStrategy extends LoginStrategy {
       stateService,
       twoFactorService,
     );
+
+    this.email$ = this.cache.state$.pipe(map((state) => state.email));
+    this.orgId$ = this.cache.state$.pipe(map((state) => state.orgId));
+    this.ssoEmail2FaSessionToken$ = this.cache.state$.pipe(
+      map((state) => state.ssoEmail2FaSessionToken),
+    );
   }
 
   async logIn(credentials: SsoLoginCredentials) {
-    this.orgId = credentials.orgId;
+    const orgId = credentials.orgId;
     this.tokenRequest = new SsoTokenRequest(
       credentials.code,
       credentials.codeVerifier,
@@ -83,13 +112,15 @@ export class SsoLoginStrategy extends LoginStrategy {
 
     const [ssoAuthResult] = await this.startLogIn();
 
-    this.email = ssoAuthResult.email;
-    this.ssoEmail2FaSessionToken = ssoAuthResult.ssoEmail2FaSessionToken;
+    const email = ssoAuthResult.email;
+    const ssoEmail2FaSessionToken = ssoAuthResult.ssoEmail2FaSessionToken;
 
     // Auth guard currently handles redirects for this.
     if (ssoAuthResult.forcePasswordReset == ForceSetPasswordReason.AdminForcePasswordReset) {
       await this.stateService.setForceSetPasswordReason(ssoAuthResult.forcePasswordReset);
     }
+
+    this.cache.update((data) => Object.assign(data, { email, orgId, ssoEmail2FaSessionToken }));
 
     return ssoAuthResult;
   }
@@ -103,7 +134,10 @@ export class SsoLoginStrategy extends LoginStrategy {
       // The presence of a masterKeyEncryptedUserKey indicates that the user has already been provisioned in Key Connector.
       const newSsoUser = tokenResponse.key == null;
       if (newSsoUser) {
-        await this.keyConnectorService.convertNewSsoUserToKeyConnector(tokenResponse, this.orgId);
+        await this.keyConnectorService.convertNewSsoUserToKeyConnector(
+          tokenResponse,
+          await firstValueFrom(this.orgId$),
+        );
       } else {
         const keyConnectorUrl = this.getKeyConnectorUrl(tokenResponse);
         await this.keyConnectorService.setMasterKeyFromUrl(keyConnectorUrl);

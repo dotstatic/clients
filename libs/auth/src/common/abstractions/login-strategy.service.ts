@@ -13,13 +13,15 @@ import {
   AuthRequestLoginCredentials,
   WebAuthnLoginCredentials,
 } from "../models/domain/login-credentials";
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 
 export abstract class LoginStrategyServiceAbstraction {
-  masterPasswordHash: string;
-  email: string;
+  currentAuthType$: Observable<AuthenticationType | null>;
   accessCode: string;
   authRequestId: string;
-  ssoEmail2FaSessionToken: string;
+  getEmail: () => Promise<string | null>;
+  getMasterPasswordHash: () => Promise<string | null>;
+  getSsoEmail2FaSessionToken: () => Promise<string | null>;
 
   logIn: (
     credentials:
@@ -34,10 +36,6 @@ export abstract class LoginStrategyServiceAbstraction {
     captchaResponse: string,
   ) => Promise<AuthResult>;
   makePreloginKey: (masterPassword: string, email: string) => Promise<MasterKey>;
-  authingWithUserApiKey: () => boolean;
-  authingWithSso: () => boolean;
-  authingWithPassword: () => boolean;
-  authingWithPasswordless: () => boolean;
   authResponsePushNotification: (notification: AuthRequestPushNotification) => Promise<any>;
   passwordlessLogin: (
     id: string,
