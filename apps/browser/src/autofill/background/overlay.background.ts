@@ -1,6 +1,9 @@
+import { firstValueFrom } from "rxjs";
+
 import { SettingsService } from "@bitwarden/common/abstractions/settings.service";
 import { AuthService } from "@bitwarden/common/auth/abstractions/auth.service";
 import { AuthenticationStatus } from "@bitwarden/common/auth/enums/authentication-status";
+import { AutofillSettingsServiceAbstraction } from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { EnvironmentService } from "@bitwarden/common/platform/abstractions/environment.service";
 import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
 import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/platform-utils.service";
@@ -91,6 +94,7 @@ class OverlayBackground implements OverlayBackgroundInterface {
     private environmentService: EnvironmentService,
     private settingsService: SettingsService,
     private stateService: StateService,
+    private autofillSettingsService: AutofillSettingsServiceAbstraction,
     private i18nService: I18nService,
     private platformUtilsService: PlatformUtilsService,
   ) {
@@ -457,7 +461,9 @@ class OverlayBackground implements OverlayBackgroundInterface {
    * Gets the overlay's visibility setting from the settings service.
    */
   private async getOverlayVisibility(): Promise<number> {
-    this.overlayVisibility = await this.settingsService.getAutoFillOverlayVisibility();
+    this.overlayVisibility = await firstValueFrom(
+      this.autofillSettingsService.inlineMenuVisibility$,
+    );
 
     return this.overlayVisibility;
   }

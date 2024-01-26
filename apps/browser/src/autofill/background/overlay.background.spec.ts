@@ -2,6 +2,7 @@ import { mock, mockReset } from "jest-mock-extended";
 
 import { AuthenticationStatus } from "@bitwarden/common/auth/enums/authentication-status";
 import { AuthService } from "@bitwarden/common/auth/services/auth.service";
+import { AutofillSettingsServiceAbstraction } from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { ThemeType } from "@bitwarden/common/platform/enums";
 import { EnvironmentService } from "@bitwarden/common/platform/services/environment.service";
 import { I18nService } from "@bitwarden/common/platform/services/i18n.service";
@@ -47,6 +48,7 @@ describe("OverlayBackground", () => {
   });
   const settingsService = mock<SettingsService>();
   const stateService = mock<BrowserStateService>();
+  const autofillSettingsService = mock<AutofillSettingsServiceAbstraction>();
   const i18nService = mock<I18nService>();
   const platformUtilsService = mock<BrowserPlatformUtilsService>();
   const initOverlayElementPorts = (options = { initList: true, initButton: true }) => {
@@ -76,6 +78,7 @@ describe("OverlayBackground", () => {
       environmentService,
       settingsService,
       stateService,
+      autofillSettingsService,
       i18nService,
       platformUtilsService,
     );
