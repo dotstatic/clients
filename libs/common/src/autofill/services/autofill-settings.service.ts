@@ -7,6 +7,7 @@ import {
 import {
   AUTOFILL_SETTINGS_DISK,
   ActiveUserState,
+  GlobalState,
   KeyDefinition,
   StateProvider,
 } from "../../platform/state";
@@ -78,7 +79,7 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
   private activateAutoFillOnPageLoadFromPolicyState: ActiveUserState<boolean>;
   readonly activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
 
-  private inlineMenuVisibilityState: ActiveUserState<InlineMenuVisibilitySetting>;
+  private inlineMenuVisibilityState: GlobalState<InlineMenuVisibilitySetting>;
   readonly inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
 
   constructor(private stateProvider: StateProvider) {
@@ -105,7 +106,7 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
     this.activateAutoFillOnPageLoadFromPolicy$ =
       this.activateAutoFillOnPageLoadFromPolicyState.state$.pipe(map((x) => x ?? false));
 
-    this.inlineMenuVisibilityState = this.stateProvider.getActive(INLINE_MENU_VISIBILITY);
+    this.inlineMenuVisibilityState = this.stateProvider.getGlobal(INLINE_MENU_VISIBILITY);
     this.inlineMenuVisibility$ = this.inlineMenuVisibilityState.state$.pipe(
       map((x) => x ?? AutofillOverlayVisibility.Off),
     );
