@@ -393,8 +393,8 @@ export class TwoFactorComponent extends CaptchaProtectedComponent implements OnI
       request.ssoEmail2FaSessionToken =
         await this.loginStrategyService.getSsoEmail2FaSessionToken();
       request.deviceIdentifier = await this.appIdService.getAppId();
-      request.authRequestAccessCode = this.loginStrategyService.accessCode;
-      request.authRequestId = this.loginStrategyService.authRequestId;
+      request.authRequestAccessCode = await this.loginStrategyService.getAccessCode();
+      request.authRequestId = await this.loginStrategyService.getAuthRequestId();
       this.emailPromise = this.apiService.postTwoFactorEmail(request);
       await this.emailPromise;
       if (doToast) {

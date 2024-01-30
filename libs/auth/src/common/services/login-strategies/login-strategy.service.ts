@@ -31,11 +31,23 @@ import { PasswordStrengthServiceAbstraction } from "@bitwarden/common/tools/pass
 import { MasterKey } from "@bitwarden/common/types/key";
 
 import { LoginStrategyServiceAbstraction } from "../../abstractions";
-import { AuthRequestLoginStrategy } from "../../login-strategies/auth-request-login.strategy";
-import { PasswordLoginStrategy } from "../../login-strategies/password-login.strategy";
-import { SsoLoginStrategy } from "../../login-strategies/sso-login.strategy";
-import { UserApiLoginStrategy } from "../../login-strategies/user-api-login.strategy";
-import { WebAuthnLoginStrategy } from "../../login-strategies/webauthn-login.strategy";
+import {
+  AuthRequestLoginStrategy,
+  AuthRequestLoginStrategyData,
+} from "../../login-strategies/auth-request-login.strategy";
+import {
+  PasswordLoginStrategy,
+  PasswordLoginStrategyData,
+} from "../../login-strategies/password-login.strategy";
+import { SsoLoginStrategy, SsoLoginStrategyData } from "../../login-strategies/sso-login.strategy";
+import {
+  UserApiLoginStrategy,
+  UserApiLoginStrategyData,
+} from "../../login-strategies/user-api-login.strategy";
+import {
+  WebAuthnLoginStrategy,
+  WebAuthnLoginStrategyData,
+} from "../../login-strategies/webauthn-login.strategy";
 import {
   UserApiLoginCredentials,
   PasswordLoginCredentials,
@@ -50,6 +62,13 @@ import {
   StateProvider,
 } from "@bitwarden/common/platform/state";
 
+type DataTypes =
+  | PasswordLoginStrategyData
+  | SsoLoginStrategyData
+  | UserApiLoginStrategyData
+  | AuthRequestLoginStrategyData
+  | WebAuthnLoginStrategyData;
+
 const CURRENT_LOGIN_STRATEGY_KEY = new KeyDefinition<AuthenticationType | null>(
   LOGIN_STRATEGY_MEMORY,
   "currentLoginStrategy",
@@ -58,11 +77,27 @@ const CURRENT_LOGIN_STRATEGY_KEY = new KeyDefinition<AuthenticationType | null>(
   },
 );
 
-const LOGIN_STRATEGY_CACHE_KEY = new KeyDefinition<any>(
+const LOGIN_STRATEGY_CACHE_KEY = new KeyDefinition<DataTypes | null>(
   LOGIN_STRATEGY_MEMORY,
   "loginStrategyCache",
   {
-    deserializer: (data) => data,
+    deserializer: (data) => {
+      if (data == null) {
+        return null;
+      }
+      switch (data.type) {
+        case AuthenticationType.Password:
+          return PasswordLoginStrategyData.fromJSON(data);
+        case AuthenticationType.Sso:
+          return SsoLoginStrategyData.fromJSON(data);
+        case AuthenticationType.UserApi:
+          return UserApiLoginStrategyData.fromJSON(data);
+        case AuthenticationType.AuthRequest:
+          return AuthRequestLoginStrategyData.fromJSON(data);
+        case AuthenticationType.WebAuthn:
+          return WebAuthnLoginStrategyData.fromJSON(data);
+      }
+    },
   },
 );
 
@@ -78,7 +113,7 @@ const sessionTimeoutLength = 2 * 60 * 1000; // 2 minutes
 
 export class LoginStrategyService implements LoginStrategyServiceAbstraction {
   private currentAuthTypeState: GlobalState<AuthenticationType | null>;
-  private loginStrategyCacheState: GlobalState<any>;
+  private loginStrategyCacheState: GlobalState<DataTypes | null>;
   private loginStrategyCacheExpirationState: GlobalState<Date | null>;
 
   private sessionTimeout: any;
@@ -91,6 +126,43 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     | WebAuthnLoginStrategy
     | null
   >;
+
+  private pushNotificationSubject = new Subject<string>();
+
+  constructor(
+    protected cryptoService: CryptoService,
+    protected apiService: ApiService,
+    protected tokenService: TokenService,
+    protected appIdService: AppIdService,
+    protected platformUtilsService: PlatformUtilsService,
+    protected messagingService: MessagingService,
+    protected logService: LogService,
+    protected keyConnectorService: KeyConnectorService,
+    protected environmentService: EnvironmentService,
+    protected stateService: StateService,
+    protected twoFactorService: TwoFactorService,
+    protected i18nService: I18nService,
+    protected encryptService: EncryptService,
+    protected passwordStrengthService: PasswordStrengthServiceAbstraction,
+    protected policyService: PolicyService,
+    protected deviceTrustCryptoService: DeviceTrustCryptoServiceAbstraction,
+    protected authReqCryptoService: AuthRequestCryptoServiceAbstraction,
+    protected stateProvider: StateProvider,
+  ) {
+    this.currentAuthTypeState = this.stateProvider.getGlobal(CURRENT_LOGIN_STRATEGY_KEY);
+    this.loginStrategyCacheState = this.stateProvider.getGlobal(LOGIN_STRATEGY_CACHE_KEY);
+    this.loginStrategyCacheExpirationState = this.stateProvider.getGlobal(
+      LOGIN_STRATEGY_CACHE_EXPIRATION,
+    );
+
+    this.currentAuthType$ = this.currentAuthTypeState.state$;
+
+    this.loginStrategy$ = this.currentAuthTypeState.state$.pipe(
+      distinctUntilChanged(),
+      this.initializeLoginStrategy.bind(this),
+      shareReplay({ refCount: true, bufferSize: 1 }),
+    );
+  }
 
   /**
    * The current strategy being used to authenticate.
@@ -139,60 +211,30 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return null;
   }
 
-  get accessCode(): string {
-    return this.logInStrategy instanceof AuthRequestLoginStrategy
-      ? this.logInStrategy.accessCode
-      : null;
+  /**
+   * Returns the access code if the user is logging in with an
+   * Auth Request. Otherwise, it will return null.
+   */
+  async getAccessCode(): Promise<string | null> {
+    const strategy = await firstValueFrom(this.loginStrategy$);
+
+    if ("accessCode$" in strategy) {
+      return await firstValueFrom(strategy.accessCode$);
+    }
+    return null;
   }
 
-  get authRequestId(): string {
-    return this.logInStrategy instanceof AuthRequestLoginStrategy
-      ? this.logInStrategy.authRequestId
-      : null;
-  }
+  /**
+   * Returns the auth request ID if the user is logging in with an
+   * Auth Request. Otherwise, it will return null.
+   */
+  async getAuthRequestId(): Promise<string | null> {
+    const strategy = await firstValueFrom(this.loginStrategy$);
 
-  private logInStrategy:
-    | UserApiLoginStrategy
-    | PasswordLoginStrategy
-    | SsoLoginStrategy
-    | AuthRequestLoginStrategy
-    | WebAuthnLoginStrategy;
-
-  private pushNotificationSubject = new Subject<string>();
-
-  constructor(
-    protected cryptoService: CryptoService,
-    protected apiService: ApiService,
-    protected tokenService: TokenService,
-    protected appIdService: AppIdService,
-    protected platformUtilsService: PlatformUtilsService,
-    protected messagingService: MessagingService,
-    protected logService: LogService,
-    protected keyConnectorService: KeyConnectorService,
-    protected environmentService: EnvironmentService,
-    protected stateService: StateService,
-    protected twoFactorService: TwoFactorService,
-    protected i18nService: I18nService,
-    protected encryptService: EncryptService,
-    protected passwordStrengthService: PasswordStrengthServiceAbstraction,
-    protected policyService: PolicyService,
-    protected deviceTrustCryptoService: DeviceTrustCryptoServiceAbstraction,
-    protected authReqCryptoService: AuthRequestCryptoServiceAbstraction,
-    protected stateProvider: StateProvider,
-  ) {
-    this.currentAuthTypeState = this.stateProvider.getGlobal(CURRENT_LOGIN_STRATEGY_KEY);
-    this.loginStrategyCacheState = this.stateProvider.getGlobal(LOGIN_STRATEGY_CACHE_KEY);
-    this.loginStrategyCacheExpirationState = this.stateProvider.getGlobal(
-      LOGIN_STRATEGY_CACHE_EXPIRATION,
-    );
-
-    this.currentAuthType$ = this.currentAuthTypeState.state$;
-
-    this.loginStrategy$ = this.currentAuthTypeState.state$.pipe(
-      distinctUntilChanged(),
-      this.initializeLoginStrategy,
-      shareReplay({ refCount: true, bufferSize: 1 }),
-    );
+    if ("authRequestId$" in strategy) {
+      return await firstValueFrom(strategy.authRequestId$);
+    }
+    return null;
   }
 
   async logIn(
@@ -255,11 +297,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
       }
       throw e;
     }
-  }
-
-  logOut(callback: () => void) {
-    callback();
-    this.messagingService.send("loggedOut");
   }
 
   async makePreloginKey(masterPassword: string, email: string): Promise<MasterKey> {
@@ -372,7 +409,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
         switch (strategy) {
           case AuthenticationType.Password:
             return new PasswordLoginStrategy(
-              this.loginStrategyCacheState,
+              this.loginStrategyCacheState as GlobalState<PasswordLoginStrategyData>,
               this.cryptoService,
               this.apiService,
               this.tokenService,
@@ -388,7 +425,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
             );
           case AuthenticationType.Sso:
             return new SsoLoginStrategy(
-              this.loginStrategyCacheState,
+              this.loginStrategyCacheState as GlobalState<SsoLoginStrategyData>,
               this.cryptoService,
               this.apiService,
               this.tokenService,
@@ -405,6 +442,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
             );
           case AuthenticationType.UserApi:
             return new UserApiLoginStrategy(
+              this.loginStrategyCacheState as GlobalState<UserApiLoginStrategyData>,
               this.cryptoService,
               this.apiService,
               this.tokenService,
@@ -419,6 +457,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
             );
           case AuthenticationType.AuthRequest:
             return new AuthRequestLoginStrategy(
+              this.loginStrategyCacheState as GlobalState<AuthRequestLoginStrategyData>,
               this.cryptoService,
               this.apiService,
               this.tokenService,
@@ -432,6 +471,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
             );
           case AuthenticationType.WebAuthn:
             return new WebAuthnLoginStrategy(
+              this.loginStrategyCacheState as GlobalState<WebAuthnLoginStrategyData>,
               this.cryptoService,
               this.apiService,
               this.tokenService,

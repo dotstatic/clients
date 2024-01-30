@@ -42,25 +42,18 @@ import {
 
 type IdentityResponse = IdentityTokenResponse | IdentityTwoFactorResponse | IdentityCaptchaResponse;
 
-export type LoginStrategyData = {
+export abstract class LoginStrategyData {
   readonly type: AuthenticationType;
-  tokenRequest?:
+  tokenRequest:
     | UserApiTokenRequest
     | PasswordTokenRequest
     | SsoTokenRequest
     | WebAuthnLoginTokenRequest;
-
   captchaBypassToken?: string;
-};
+}
 
 export abstract class LoginStrategy {
   protected cache: GlobalState<LoginStrategyData>;
-  protected abstract tokenRequest:
-    | UserApiTokenRequest
-    | PasswordTokenRequest
-    | SsoTokenRequest
-    | WebAuthnLoginTokenRequest;
-  protected captchaBypassToken: string = null;
 
   constructor(
     protected cryptoService: CryptoService,
@@ -96,7 +89,8 @@ export abstract class LoginStrategy {
   protected async startLogIn(): Promise<[AuthResult, IdentityResponse]> {
     this.twoFactorService.clearSelectedProvider();
 
-    const response = await this.apiService.postIdentityToken(this.tokenRequest);
+    const tokenRequest = (await firstValueFrom(this.cache.state$)).tokenRequest;
+    const response = await this.apiService.postIdentityToken(tokenRequest);
 
     if (response instanceof IdentityTwoFactorResponse) {
       return [await this.processTwoFactorResponse(response), response];
@@ -237,7 +231,9 @@ export abstract class LoginStrategy {
     result.twoFactorProviders = response.twoFactorProviders2;
 
     this.twoFactorService.setProviders(response);
-    this.captchaBypassToken = response.captchaToken ?? null;
+    this.cache.update((data) =>
+      Object.assign(data, { captchaBypassToken: response.captchaToken ?? null }),
+    );
     result.ssoEmail2FaSessionToken = response.ssoEmail2faSessionToken;
     result.email = response.email;
     return result;

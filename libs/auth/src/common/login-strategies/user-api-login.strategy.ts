@@ -2,6 +2,7 @@ import { ApiService } from "@bitwarden/common/abstractions/api.service";
 import { KeyConnectorService } from "@bitwarden/common/auth/abstractions/key-connector.service";
 import { TokenService } from "@bitwarden/common/auth/abstractions/token.service";
 import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor.service";
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 import { UserApiTokenRequest } from "@bitwarden/common/auth/models/request/identity-token/user-api-token.request";
 import { IdentityTokenResponse } from "@bitwarden/common/auth/models/response/identity-token.response";
 import { AppIdService } from "@bitwarden/common/platform/abstractions/app-id.service";
@@ -11,15 +12,29 @@ import { LogService } from "@bitwarden/common/platform/abstractions/log.service"
 import { MessagingService } from "@bitwarden/common/platform/abstractions/messaging.service";
 import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/platform-utils.service";
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
+import { GlobalState } from "@bitwarden/common/platform/state";
+import { firstValueFrom } from "rxjs";
+import { Jsonify } from "type-fest";
 
 import { UserApiLoginCredentials } from "../models/domain/login-credentials";
 
-import { LoginStrategy } from "./login.strategy";
+import { LoginStrategy, LoginStrategyData } from "./login.strategy";
+
+export class UserApiLoginStrategyData implements LoginStrategyData {
+  readonly type = AuthenticationType.UserApi;
+  tokenRequest: UserApiTokenRequest;
+  captchaBypassToken: string;
+
+  static fromJSON(obj: Jsonify<UserApiLoginStrategyData>): UserApiLoginStrategyData {
+    const data = Object.assign(new UserApiLoginStrategyData(), obj);
+    Object.setPrototypeOf(data.tokenRequest, UserApiTokenRequest.prototype);
+    return data;
+  }
+}
 
 export class UserApiLoginStrategy extends LoginStrategy {
-  tokenRequest: UserApiTokenRequest;
-
   constructor(
+    protected cache: GlobalState<UserApiLoginStrategyData>,
     cryptoService: CryptoService,
     apiService: ApiService,
     tokenService: TokenService,
@@ -46,12 +61,13 @@ export class UserApiLoginStrategy extends LoginStrategy {
   }
 
   override async logIn(credentials: UserApiLoginCredentials) {
-    this.tokenRequest = new UserApiTokenRequest(
+    const tokenRequest = new UserApiTokenRequest(
       credentials.clientId,
       credentials.clientSecret,
       await this.buildTwoFactor(),
       await this.buildDeviceRequest(),
     );
+    this.cache.update((data) => Object.assign(data, { tokenRequest }));
 
     const [authResult] = await this.startLogIn();
     return authResult;
@@ -84,7 +100,9 @@ export class UserApiLoginStrategy extends LoginStrategy {
 
   protected async saveAccountInformation(tokenResponse: IdentityTokenResponse) {
     await super.saveAccountInformation(tokenResponse);
-    await this.stateService.setApiKeyClientId(this.tokenRequest.clientId);
-    await this.stateService.setApiKeyClientSecret(this.tokenRequest.clientSecret);
+
+    const tokenRequest = (await firstValueFrom(this.cache.state$)).tokenRequest;
+    await this.stateService.setApiKeyClientId(tokenRequest.clientId);
+    await this.stateService.setApiKeyClientSecret(tokenRequest.clientSecret);
   }
 }

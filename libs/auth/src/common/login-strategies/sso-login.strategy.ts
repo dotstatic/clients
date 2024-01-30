@@ -20,6 +20,7 @@ import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/pl
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
 import { GlobalState } from "@bitwarden/common/platform/state";
 import { Observable, map, firstValueFrom } from "rxjs";
+import { Jsonify } from "type-fest";
 
 import { SsoLoginCredentials } from "../models/domain/login-credentials";
 import { LoginStrategyData, LoginStrategy } from "./login.strategy";
@@ -29,7 +30,7 @@ export class SsoLoginStrategyData implements LoginStrategyData {
   captchaBypassToken: string;
   tokenRequest: SsoTokenRequest;
   /**
-   * User email address.
+   * User email address. Only available after authentication.
    */
   email?: string;
   /**
@@ -44,14 +45,14 @@ export class SsoLoginStrategyData implements LoginStrategyData {
    */
   ssoEmail2FaSessionToken?: string;
 
-  constructor(init?: Partial<SsoLoginStrategyData>) {
-    Object.assign(this, init);
+  static fromJSON(obj: Jsonify<SsoLoginStrategyData>): SsoLoginStrategyData {
+    const data = Object.assign(new SsoLoginStrategyData(), obj);
+    Object.setPrototypeOf(data.tokenRequest, SsoTokenRequest.prototype);
+    return data;
   }
 }
 
 export class SsoLoginStrategy extends LoginStrategy {
-  tokenRequest: SsoTokenRequest;
-
   /**
    * @see {@link SsoLoginStrategyData.email}
    */
@@ -102,7 +103,7 @@ export class SsoLoginStrategy extends LoginStrategy {
 
   async logIn(credentials: SsoLoginCredentials) {
     const orgId = credentials.orgId;
-    this.tokenRequest = new SsoTokenRequest(
+    const tokenRequest = new SsoTokenRequest(
       credentials.code,
       credentials.codeVerifier,
       credentials.redirectUrl,
@@ -120,7 +121,9 @@ export class SsoLoginStrategy extends LoginStrategy {
       await this.stateService.setForceSetPasswordReason(ssoAuthResult.forcePasswordReset);
     }
 
-    this.cache.update((data) => Object.assign(data, { email, orgId, ssoEmail2FaSessionToken }));
+    this.cache.update((data) =>
+      Object.assign(data, { tokenRequest, email, orgId, ssoEmail2FaSessionToken }),
+    );
 
     return ssoAuthResult;
   }

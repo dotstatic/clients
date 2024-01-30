@@ -17,11 +17,11 @@ import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-
 
 export abstract class LoginStrategyServiceAbstraction {
   currentAuthType$: Observable<AuthenticationType | null>;
-  accessCode: string;
-  authRequestId: string;
   getEmail: () => Promise<string | null>;
   getMasterPasswordHash: () => Promise<string | null>;
   getSsoEmail2FaSessionToken: () => Promise<string | null>;
+  getAccessCode: () => Promise<string | null>;
+  getAuthRequestId: () => Promise<string | null>;
 
   logIn: (
     credentials:
