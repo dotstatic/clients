@@ -6,6 +6,7 @@ import {
 } from "../../../../../apps/browser/src/autofill/utils/autofill-overlay.enum";
 import {
   AUTOFILL_SETTINGS_DISK,
+  AUTOFILL_SETTINGS_DISK_LOCAL,
   ActiveUserState,
   GlobalState,
   KeyDefinition,
@@ -37,16 +38,20 @@ const AUTO_FILL_ON_PAGE_LOAD_CALLOUT_DISMISSED = new KeyDefinition(
 );
 
 const ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY = new KeyDefinition(
-  AUTOFILL_SETTINGS_DISK,
+  AUTOFILL_SETTINGS_DISK_LOCAL,
   "activateAutoFillOnPageLoadFromPolicy",
   {
     deserializer: (value: boolean) => value ?? false,
   },
 );
 
-const INLINE_MENU_VISIBILITY = new KeyDefinition(AUTOFILL_SETTINGS_DISK, "inlineMenuVisibility", {
-  deserializer: (value: InlineMenuVisibilitySetting) => value ?? AutofillOverlayVisibility.Off,
-});
+const INLINE_MENU_VISIBILITY = new KeyDefinition(
+  AUTOFILL_SETTINGS_DISK_LOCAL,
+  "inlineMenuVisibility",
+  {
+    deserializer: (value: InlineMenuVisibilitySetting) => value ?? AutofillOverlayVisibility.Off,
+  },
+);
 
 export abstract class AutofillSettingsServiceAbstraction {
   autofillOnLoad$: Observable<boolean>;

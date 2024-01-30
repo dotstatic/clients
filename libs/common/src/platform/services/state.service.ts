@@ -1,7 +1,6 @@
 import { BehaviorSubject, concatMap } from "rxjs";
 import { Jsonify, JsonValue } from "type-fest";
 
-import { AutofillOverlayVisibility } from "../../../../../apps/browser/src/autofill/utils/autofill-overlay.enum";
 import { OrganizationData } from "../../admin-console/models/data/organization.data";
 import { PolicyData } from "../../admin-console/models/data/policy.data";
 import { ProviderData } from "../../admin-console/models/data/provider.data";
@@ -1143,24 +1142,6 @@ export class StateService<
     );
   }
 
-  async getDisableAutoTotpCopy(options?: StorageOptions): Promise<boolean> {
-    return (
-      (await this.getAccount(this.reconcileOptions(options, await this.defaultOnDiskOptions())))
-        ?.settings?.disableAutoTotpCopy ?? false
-    );
-  }
-
-  async setDisableAutoTotpCopy(value: boolean, options?: StorageOptions): Promise<void> {
-    const account = await this.getAccount(
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-    account.settings.disableAutoTotpCopy = value;
-    await this.saveAccount(
-      account,
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-  }
-
   async getDisableBadgeCounter(options?: StorageOptions): Promise<boolean> {
     return (
       (await this.getAccount(this.reconcileOptions(options, await this.defaultOnDiskOptions())))
@@ -1529,25 +1510,6 @@ export class StateService<
     await this.saveGlobals(
       globals,
       this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-  }
-
-  async getAutoFillOverlayVisibility(options?: StorageOptions): Promise<number> {
-    const locallyStoredOptions = await this.defaultOnDiskLocalOptions();
-    const reconciledOptions = this.reconcileOptions(options, locallyStoredOptions);
-    const globals = await this.getGlobals(reconciledOptions);
-
-    return globals?.autoFillOverlayVisibility ?? AutofillOverlayVisibility.Off;
-  }
-
-  async setAutoFillOverlayVisibility(value: number, options?: StorageOptions): Promise<void> {
-    const globals = await this.getGlobals(
-      this.reconcileOptions(options, await this.defaultOnDiskLocalOptions()),
-    );
-    globals.autoFillOverlayVisibility = value;
-    await this.saveGlobals(
-      globals,
-      this.reconcileOptions(options, await this.defaultOnDiskLocalOptions()),
     );
   }
 

@@ -2,7 +2,7 @@ import { mock, mockReset } from "jest-mock-extended";
 
 import { AuthenticationStatus } from "@bitwarden/common/auth/enums/authentication-status";
 import { AuthService } from "@bitwarden/common/auth/services/auth.service";
-import { AutofillSettingsServiceAbstraction } from "@bitwarden/common/autofill/services/autofill-settings.service";
+import { AutofillSettingsService } from "@bitwarden/common/autofill/services/autofill-settings.service";
 import { ThemeType } from "@bitwarden/common/platform/enums";
 import { EnvironmentService } from "@bitwarden/common/platform/services/environment.service";
 import { I18nService } from "@bitwarden/common/platform/services/i18n.service";
@@ -48,7 +48,7 @@ describe("OverlayBackground", () => {
   });
   const settingsService = mock<SettingsService>();
   const stateService = mock<BrowserStateService>();
-  const autofillSettingsService = mock<AutofillSettingsServiceAbstraction>();
+  const autofillSettingsService = mock<AutofillSettingsService>();
   const i18nService = mock<I18nService>();
   const platformUtilsService = mock<BrowserPlatformUtilsService>();
   const initOverlayElementPorts = (options = { initList: true, initButton: true }) => {
@@ -82,8 +82,13 @@ describe("OverlayBackground", () => {
       i18nService,
       platformUtilsService,
     );
+
     // FIXME: Verify that this floating promise is intentional. If it is, add an explanatory comment and ensure there is proper error handling.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    jest
+      .spyOn(overlayBackground as any, "getOverlayVisibility")
+      .mockResolvedValue(AutofillOverlayVisibility.OnFieldFocus);
+
     overlayBackground.init();
   });
 
@@ -632,36 +637,6 @@ describe("OverlayBackground", () => {
 
           expect(overlayBackground["stateService"].setAddEditCipherInfo).toHaveBeenCalled();
           expect(overlayBackground["openAddEditVaultItemPopout"]).toHaveBeenCalled();
-        });
-      });
-
-      describe("getAutofillOverlayVisibility message handler", () => {
-        beforeEach(() => {
-          jest
-            .spyOn(overlayBackground["settingsService"], "getAutoFillOverlayVisibility")
-            .mockResolvedValue(AutofillOverlayVisibility.OnFieldFocus);
-        });
-
-        it("will set the overlayVisibility property", async () => {
-          sendExtensionRuntimeMessage({ command: "getAutofillOverlayVisibility" });
-          await flushPromises();
-
-          expect(overlayBackground["overlayVisibility"]).toBe(
-            AutofillOverlayVisibility.OnFieldFocus,
-          );
-        });
-
-        it("returns the overlayVisibility property", async () => {
-          const sendMessageSpy = jest.fn();
-
-          sendExtensionRuntimeMessage(
-            { command: "getAutofillOverlayVisibility" },
-            undefined,
-            sendMessageSpy,
-          );
-          await flushPromises();
-
-          expect(sendMessageSpy).toHaveBeenCalledWith(AutofillOverlayVisibility.OnFieldFocus);
         });
       });
 

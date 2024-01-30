@@ -17,7 +17,6 @@ import { CipherView } from "@bitwarden/common/vault/models/view/cipher.view";
 import { LoginUriView } from "@bitwarden/common/vault/models/view/login-uri.view";
 import { LoginView } from "@bitwarden/common/vault/models/view/login.view";
 
-import { InlineMenuVisibilitySetting , AutofillOverlayElement, AutofillOverlayPort } from "../../../../../apps/browser/src/autofill/utils/autofill-overlay.enum";
 import { openUnlockPopout } from "../../auth/popup/utils/auth-popout-window";
 import { BrowserApi } from "../../platform/browser/browser-api";
 import {
@@ -27,6 +26,11 @@ import {
 import { SHOW_AUTOFILL_BUTTON } from "../constants";
 import LockedVaultPendingNotificationsItem from "../notification/models/locked-vault-pending-notifications-item";
 import { AutofillService, PageDetail } from "../services/abstractions/autofill.service";
+import {
+  InlineMenuVisibilitySetting,
+  AutofillOverlayElement,
+  AutofillOverlayPort,
+} from "../utils/autofill-overlay.enum";
 
 import {
   FocusedFieldData,
@@ -45,7 +49,6 @@ class OverlayBackground implements OverlayBackgroundInterface {
   private readonly openUnlockPopout = openUnlockPopout;
   private readonly openViewVaultItemPopout = openViewVaultItemPopout;
   private readonly openAddEditVaultItemPopout = openAddEditVaultItemPopout;
-  private overlayVisibility: InlineMenuVisibilitySetting;
   private overlayLoginCiphers: Map<string, CipherView> = new Map();
   private pageDetailsForTab: Record<number, PageDetail[]> = {};
   private userAuthStatus: AuthenticationStatus = AuthenticationStatus.LoggedOut;
@@ -58,7 +61,7 @@ class OverlayBackground implements OverlayBackgroundInterface {
     openAutofillOverlay: () => this.openOverlay(false),
     autofillOverlayElementClosed: ({ message }) => this.overlayElementClosed(message),
     autofillOverlayAddNewVaultItem: ({ message, sender }) => this.addNewVaultItem(message, sender),
-    getAutofillOverlayVisibility: () => this.getOverlayVisibility(),
+    getAutofillOverlayVisibility: async () => await this.getOverlayVisibility(),
     checkAutofillOverlayFocused: () => this.checkOverlayFocused(),
     focusAutofillOverlayList: () => this.focusOverlayList(),
     updateAutofillOverlayPosition: ({ message }) => this.updateOverlayPosition(message),
@@ -461,11 +464,7 @@ class OverlayBackground implements OverlayBackgroundInterface {
    * Gets the overlay's visibility setting from the settings service.
    */
   private async getOverlayVisibility(): Promise<InlineMenuVisibilitySetting> {
-    this.overlayVisibility = await firstValueFrom(
-      this.autofillSettingsService.inlineMenuVisibility$,
-    );
-
-    return this.overlayVisibility;
+    return await firstValueFrom(this.autofillSettingsService.inlineMenuVisibility$);
   }
 
   /**
