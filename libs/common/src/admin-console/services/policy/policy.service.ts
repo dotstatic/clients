@@ -1,5 +1,6 @@
 import { BehaviorSubject, concatMap, map, Observable, of } from "rxjs";
 
+import { AutofillSettingsServiceAbstraction } from "../../../autofill/services/autofill-settings.service";
 import { ListResponse } from "../../../models/response/list.response";
 import { StateService } from "../../../platform/abstractions/state.service";
 import { Utils } from "../../../platform/misc/utils";
@@ -21,6 +22,7 @@ export class PolicyService implements InternalPolicyServiceAbstraction {
   constructor(
     protected stateService: StateService,
     private organizationService: OrganizationService,
+    protected autofillSettingsService: AutofillSettingsServiceAbstraction,
   ) {
     this.stateService.activeAccountUnlocked$
       .pipe(
