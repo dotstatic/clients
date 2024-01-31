@@ -1238,24 +1238,6 @@ export class StateService<
     );
   }
 
-  async getDismissedAutofillCallout(options?: StorageOptions): Promise<boolean> {
-    return (
-      (await this.getAccount(this.reconcileOptions(options, await this.defaultOnDiskOptions())))
-        ?.settings?.dismissedAutoFillOnPageLoadCallout ?? false
-    );
-  }
-
-  async setDismissedAutofillCallout(value: boolean, options?: StorageOptions): Promise<void> {
-    const account = await this.getAccount(
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-    account.settings.dismissedAutoFillOnPageLoadCallout = value;
-    await this.saveAccount(
-      account,
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-  }
-
   async getDontShowCardsCurrentTab(options?: StorageOptions): Promise<boolean> {
     return (
       (await this.getAccount(this.reconcileOptions(options, await this.defaultOnDiskOptions())))
@@ -1491,24 +1473,6 @@ export class StateService<
     globals.enableAlwaysOnTop = value;
     await this.saveGlobals(
       globals,
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-  }
-
-  async getEnableAutoFillOnPageLoad(options?: StorageOptions): Promise<boolean> {
-    return (
-      (await this.getAccount(this.reconcileOptions(options, await this.defaultOnDiskOptions())))
-        ?.settings?.enableAutoFillOnPageLoad ?? false
-    );
-  }
-
-  async setEnableAutoFillOnPageLoad(value: boolean, options?: StorageOptions): Promise<void> {
-    const account = await this.getAccount(
-      this.reconcileOptions(options, await this.defaultOnDiskOptions()),
-    );
-    account.settings.enableAutoFillOnPageLoad = value;
-    await this.saveAccount(
-      account,
       this.reconcileOptions(options, await this.defaultOnDiskOptions()),
     );
   }
