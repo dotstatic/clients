@@ -61,7 +61,7 @@ class OverlayBackground implements OverlayBackgroundInterface {
     openAutofillOverlay: () => this.openOverlay(false),
     autofillOverlayElementClosed: ({ message }) => this.overlayElementClosed(message),
     autofillOverlayAddNewVaultItem: ({ message, sender }) => this.addNewVaultItem(message, sender),
-    getAutofillOverlayVisibility: async () => await this.getOverlayVisibility(),
+    getAutofillOverlayVisibility: () => this.getOverlayVisibility(),
     checkAutofillOverlayFocused: () => this.checkOverlayFocused(),
     focusAutofillOverlayList: () => this.focusOverlayList(),
     updateAutofillOverlayPosition: ({ message }) => this.updateOverlayPosition(message),

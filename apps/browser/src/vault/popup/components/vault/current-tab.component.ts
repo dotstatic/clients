@@ -124,7 +124,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
       .subscribe(() => this.searchVault());
 
     // activate autofill on page load if policy is set
-    if (await firstValueFrom(this.autofillSettingsService.activateAutofillOnPageLoadFromPolicy$)) {
+    if (await this.getActivateAutofillOnPageLoadFromPolicy()) {
       await this.autofillSettingsService.setAutofillOnPageLoad(true);
       await this.autofillSettingsService.setActivateAutofillOnPageLoadFromPolicy(false);
       this.platformUtilsService.showToast(
@@ -301,6 +301,10 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
     // FIXME: Verify that this floating promise is intentional. If it is, add an explanatory comment and ensure there is proper error handling.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.router.navigate(["autofill"]);
+  }
+
+  private async getActivateAutofillOnPageLoadFromPolicy(): Promise<boolean> {
+    return await firstValueFrom(this.autofillSettingsService.activateAutofillOnPageLoadFromPolicy$);
   }
 
   async dismissCallout() {
