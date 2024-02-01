@@ -43,6 +43,10 @@ import {
   PlatformUtilsServiceInitOptions,
 } from "../../../platform/background/service-factories/platform-utils-service.factory";
 import {
+  stateProviderFactory,
+  StateProviderInitOptions,
+} from "../../../platform/background/service-factories/state-provider.factory";
+import {
   stateServiceFactory,
   StateServiceInitOptions,
 } from "../../../platform/background/service-factories/state-service.factory";
@@ -84,7 +88,8 @@ export type LoginStrategyServiceInitOptions = LoginStrategyServiceFactoryOptions
   PolicyServiceInitOptions &
   PasswordStrengthServiceInitOptions &
   DeviceTrustCryptoServiceInitOptions &
-  AuthRequestCryptoServiceInitOptions;
+  AuthRequestCryptoServiceInitOptions &
+  StateProviderInitOptions;
 
 export function loginStrategyServiceFactory(
   cache: { loginStrategyService?: LoginStrategyServiceAbstraction } & CachedServices,
@@ -113,6 +118,7 @@ export function loginStrategyServiceFactory(
         await policyServiceFactory(cache, opts),
         await deviceTrustCryptoServiceFactory(cache, opts),
         await authRequestCryptoServiceFactory(cache, opts),
+        await stateProviderFactory(cache, opts),
       ),
   );
 }

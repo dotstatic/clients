@@ -417,6 +417,7 @@ export class Main {
       this.policyService,
       this.deviceTrustCryptoService,
       this.authRequestCryptoService,
+      this.stateProvider,
     );
 
     this.authService = new AuthService(
