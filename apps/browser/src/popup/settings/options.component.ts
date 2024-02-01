@@ -136,7 +136,7 @@ export class OptionsComponent implements OnInit {
   }
 
   async updateAutoTotpCopy() {
-    await this.autofillSettingsService.setAutofillOnPageLoadDefault(this.enableAutoTotpCopy);
+    await this.autofillSettingsService.setAutoCopyTotp(this.enableAutoTotpCopy);
   }
 
   async updateAutoFillOnPageLoad() {
