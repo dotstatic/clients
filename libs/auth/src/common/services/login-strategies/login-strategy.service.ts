@@ -1,4 +1,4 @@
-import { distinctUntilChanged, firstValueFrom, map, Observable, shareReplay, Subject } from "rxjs";
+import { distinctUntilChanged, firstValueFrom, map, Observable, shareReplay } from "rxjs";
 
 import { ApiService } from "@bitwarden/common/abstractions/api.service";
 import { PolicyService } from "@bitwarden/common/admin-console/abstractions/policy/policy.service.abstraction";
@@ -27,6 +27,12 @@ import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/pl
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
 import { KdfType } from "@bitwarden/common/platform/enums";
 import { Utils } from "@bitwarden/common/platform/misc/utils";
+import {
+  GlobalState,
+  KeyDefinition,
+  LOGIN_STRATEGY_MEMORY,
+  StateProvider,
+} from "@bitwarden/common/platform/state";
 import { PasswordStrengthServiceAbstraction } from "@bitwarden/common/tools/password-strength";
 import { MasterKey } from "@bitwarden/common/types/key";
 
@@ -55,12 +61,6 @@ import {
   AuthRequestLoginCredentials,
   WebAuthnLoginCredentials,
 } from "../../models";
-import {
-  GlobalState,
-  KeyDefinition,
-  LOGIN_STRATEGY_MEMORY,
-  StateProvider,
-} from "@bitwarden/common/platform/state";
 
 type DataTypes =
   | PasswordLoginStrategyData
@@ -109,12 +109,21 @@ const LOGIN_STRATEGY_CACHE_EXPIRATION = new KeyDefinition<Date | null>(
   },
 );
 
+const AUTH_REQUEST_PUSH_NOTIFICATION = new KeyDefinition<string>(
+  LOGIN_STRATEGY_MEMORY,
+  "authRequestPushNotification",
+  {
+    deserializer: (data) => data,
+  },
+);
+
 const sessionTimeoutLength = 2 * 60 * 1000; // 2 minutes
 
 export class LoginStrategyService implements LoginStrategyServiceAbstraction {
   private currentAuthTypeState: GlobalState<AuthenticationType | null>;
   private loginStrategyCacheState: GlobalState<DataTypes | null>;
   private loginStrategyCacheExpirationState: GlobalState<Date | null>;
+  private authRequestPushNotificationState: GlobalState<string>;
 
   private sessionTimeout: any;
 
@@ -127,7 +136,17 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     | null
   >;
 
-  private pushNotificationSubject = new Subject<string>();
+  /**
+   * The current strategy being used to authenticate.
+   * Returns null if authentication hasn't been started or
+   * the session has timed out.
+   */
+  currentAuthType$: Observable<AuthenticationType | null>;
+
+  /**
+   * Emits when an auth request has been approved.
+   */
+  authRequestPushNotification$: Observable<string>;
 
   constructor(
     protected cryptoService: CryptoService,
@@ -154,22 +173,18 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     this.loginStrategyCacheExpirationState = this.stateProvider.getGlobal(
       LOGIN_STRATEGY_CACHE_EXPIRATION,
     );
+    this.authRequestPushNotificationState = this.stateProvider.getGlobal(
+      AUTH_REQUEST_PUSH_NOTIFICATION,
+    );
 
     this.currentAuthType$ = this.currentAuthTypeState.state$;
-
+    this.authRequestPushNotification$ = this.authRequestPushNotificationState.state$;
     this.loginStrategy$ = this.currentAuthTypeState.state$.pipe(
       distinctUntilChanged(),
       this.initializeLoginStrategy.bind(this),
       shareReplay({ refCount: true, bufferSize: 1 }),
     );
   }
-
-  /**
-   * The current strategy being used to authenticate.
-   * Returns null if authentication hasn't been started or
-   * the session has timed out.
-   */
-  currentAuthType$: Observable<AuthenticationType | null>;
 
   /**
    * If the login strategy uses the email address of the user, this
@@ -322,11 +337,7 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
   }
 
   async authResponsePushNotification(notification: AuthRequestPushNotification): Promise<any> {
-    this.pushNotificationSubject.next(notification.id);
-  }
-
-  getPushNotificationObs$(): Observable<any> {
-    return this.pushNotificationSubject.asObservable();
+    this.authRequestPushNotificationState.update((_) => notification.id);
   }
 
   async passwordlessLogin(

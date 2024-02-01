@@ -1,5 +1,6 @@
 import { Observable } from "rxjs";
 
+import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 import { AuthResult } from "@bitwarden/common/auth/models/domain/auth-result";
 import { TokenTwoFactorRequest } from "@bitwarden/common/auth/models/request/identity-token/token-two-factor.request";
 import { AuthRequestResponse } from "@bitwarden/common/auth/models/response/auth-request.response";
@@ -13,10 +14,10 @@ import {
   AuthRequestLoginCredentials,
   WebAuthnLoginCredentials,
 } from "../models/domain/login-credentials";
-import { AuthenticationType } from "@bitwarden/common/auth/enums/authentication-type";
 
 export abstract class LoginStrategyServiceAbstraction {
   currentAuthType$: Observable<AuthenticationType | null>;
+  authRequestPushNotification$: Observable<string>;
   getEmail: () => Promise<string | null>;
   getMasterPasswordHash: () => Promise<string | null>;
   getSsoEmail2FaSessionToken: () => Promise<string | null>;
@@ -42,5 +43,4 @@ export abstract class LoginStrategyServiceAbstraction {
     key: string,
     requestApproved: boolean,
   ) => Promise<AuthRequestResponse>;
-  getPushNotificationObs$: () => Observable<any>;
 }
