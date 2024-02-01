@@ -6,7 +6,12 @@ import { FakeStateProvider } from "../../../spec/fake-state-provider";
 import { UserId } from "../../types/guid";
 
 import { BiometricStateService, DefaultBiometricStateService } from "./biometric-state.service";
-import { ENCRYPTED_CLIENT_KEY_HALF } from "./biometric.state";
+import {
+  DISMISSED_REQUIRE_PASSWORD_ON_START_CALLOUT,
+  ENCRYPTED_CLIENT_KEY_HALF,
+  PROMPT_AUTOMATICALLY,
+  PROMPT_CANCELLED,
+} from "./biometric.state";
 
 describe("BiometricStateService", () => {
   let sut: BiometricStateService;
@@ -56,6 +61,58 @@ describe("BiometricStateService", () => {
       await sut.setEncryptedClientKeyHalf(encClientKeyHalf);
 
       expect(await firstValueFrom(sut.encryptedClientKeyHalf$)).toEqual(encClientKeyHalf);
+    });
+  });
+
+  describe("require password on start callout", () => {
+    it("should be false when not set", async () => {
+      expect(await firstValueFrom(sut.dismissedRequirePasswordOnStartCallout$)).toBe(false);
+    });
+
+    it("should be true when set", async () => {
+      await sut.setDismissedRequirePasswordOnStartCallout();
+
+      expect(await firstValueFrom(sut.dismissedRequirePasswordOnStartCallout$)).toBe(true);
+    });
+
+    it("should update disk state", async () => {
+      await sut.setDismissedRequirePasswordOnStartCallout();
+
+      expect(
+        stateProvider.activeUser.getFake(DISMISSED_REQUIRE_PASSWORD_ON_START_CALLOUT).nextMock,
+      ).toHaveBeenCalledWith([userId, true]);
+    });
+  });
+
+  describe("prompt cancelled", () => {
+    test("observable should be updated", async () => {
+      await sut.setPromptCancelled();
+
+      expect(await firstValueFrom(sut.promptCancelled$)).toBe(true);
+    });
+
+    it("should update state with set", async () => {
+      await sut.setPromptCancelled();
+
+      const nextMock = stateProvider.activeUser.getFake(PROMPT_CANCELLED).nextMock;
+      expect(nextMock).toHaveBeenCalledWith([userId, true]);
+      expect(nextMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("prompt automatically", () => {
+    test("observable should be updated", async () => {
+      await sut.setPromptAutomatically(true);
+
+      expect(await firstValueFrom(sut.promptAutomatically$)).toBe(true);
+    });
+
+    it("should update state with setPromptAutomatically", async () => {
+      await sut.setPromptAutomatically(true);
+
+      const nextMock = stateProvider.activeUser.getFake(PROMPT_AUTOMATICALLY).nextMock;
+      expect(nextMock).toHaveBeenCalledWith([userId, true]);
+      expect(nextMock).toHaveBeenCalledTimes(1);
     });
   });
 });
