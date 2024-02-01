@@ -136,16 +136,8 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     | null
   >;
 
-  /**
-   * The current strategy being used to authenticate.
-   * Returns null if authentication hasn't been started or
-   * the session has timed out.
-   */
   currentAuthType$: Observable<AuthenticationType | null>;
 
-  /**
-   * Emits when an auth request has been approved.
-   */
   authRequestPushNotification$: Observable<string>;
 
   constructor(
@@ -186,10 +178,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     );
   }
 
-  /**
-   * If the login strategy uses the email address of the user, this
-   * will return it. Otherwise, it will return null.
-   */
   async getEmail(): Promise<string | null> {
     const strategy = await firstValueFrom(this.loginStrategy$);
 
@@ -199,10 +187,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return null;
   }
 
-  /**
-   * If the user is logging in with a master password, this will return
-   * the master password hash. Otherwise, it will return null.
-   */
   async getMasterPasswordHash(): Promise<string | null> {
     const strategy = await firstValueFrom(this.loginStrategy$);
 
@@ -212,11 +196,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return null;
   }
 
-  /**
-   * If the user is logging in with SSO, this will return
-   * the email auth token. Otherwise, it will return null.
-   * @see {@link SsoLoginStrategyData.ssoEmail2FaSessionToken}
-   */
   async getSsoEmail2FaSessionToken(): Promise<string | null> {
     const strategy = await firstValueFrom(this.loginStrategy$);
 
@@ -226,10 +205,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return null;
   }
 
-  /**
-   * Returns the access code if the user is logging in with an
-   * Auth Request. Otherwise, it will return null.
-   */
   async getAccessCode(): Promise<string | null> {
     const strategy = await firstValueFrom(this.loginStrategy$);
 
@@ -239,10 +214,6 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return null;
   }
 
-  /**
-   * Returns the auth request ID if the user is logging in with an
-   * Auth Request. Otherwise, it will return null.
-   */
   async getAuthRequestId(): Promise<string | null> {
     const strategy = await firstValueFrom(this.loginStrategy$);
 
@@ -336,8 +307,8 @@ export class LoginStrategyService implements LoginStrategyServiceAbstraction {
     return await this.cryptoService.makeMasterKey(masterPassword, email, kdf, kdfConfig);
   }
 
-  async authResponsePushNotification(notification: AuthRequestPushNotification): Promise<any> {
-    this.authRequestPushNotificationState.update((_) => notification.id);
+  async sendAuthRequestPushNotification(notification: AuthRequestPushNotification): Promise<void> {
+    await this.authRequestPushNotificationState.update((_) => notification.id);
   }
 
   async passwordlessLogin(
