@@ -32,7 +32,7 @@ export class BrowserPolicyService extends PolicyService {
   }
 
   private async setActivateAutofillOnPageLoadFromPolicy(isEnabled: boolean): Promise<void> {
-    this.autofillSettingsService.setActivateAutofillOnPageLoadFromPolicy(!isEnabled);
+    this.autofillSettingsService.setActivateAutofillOnPageLoadFromPolicy(isEnabled);
   }
 
   private async getAutofillOnPageLoad(): Promise<boolean> {
