@@ -8,6 +8,7 @@ import { WindowState } from "@bitwarden/common/models/domain/window-state";
 import { LogService } from "@bitwarden/common/platform/abstractions/log.service";
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
 import { AbstractStorageService } from "@bitwarden/common/platform/abstractions/storage.service";
+import { BiometricStateService } from "@bitwarden/common/platform/biometrics/biometric-state.service";
 
 import {
   cleanUserAgent,
@@ -36,6 +37,7 @@ export class WindowMain {
 
   constructor(
     private stateService: StateService,
+    private biometricStateService: BiometricStateService,
     private logService: LogService,
     private storageService: AbstractStorageService,
     private argvCallback: (argv: string[]) => void = null,
@@ -90,7 +92,7 @@ export class WindowMain {
         // down the application.
         app.on("before-quit", () => {
           // Allow biometric to auto-prompt on reload
-          this.stateService.setBiometricPromptCancelled(false);
+          this.biometricStateService.resetPromptCancelled();
           this.isQuitting = true;
         });
 
