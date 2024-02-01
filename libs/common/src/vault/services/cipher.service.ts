@@ -1234,7 +1234,7 @@ export class CipherService implements CipherServiceAbstraction {
   }
 
   private async getAutofillOnPageLoadDefault() {
-    return await firstValueFrom(this.autofillSettingsService.autofillOnLoadDefault$);
+    return await firstValueFrom(this.autofillSettingsService.autofillOnPageLoadDefault$);
   }
 
   private async getCipherForUrl(

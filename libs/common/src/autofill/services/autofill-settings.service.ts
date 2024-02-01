@@ -19,7 +19,7 @@ const AUTOFILL_ON_PAGE_LOAD = new KeyDefinition(AUTOFILL_SETTINGS_DISK, "autoFil
 
 const AUTOFILL_ON_PAGE_LOAD_DEFAULT = new KeyDefinition(
   AUTOFILL_SETTINGS_DISK,
-  "autoFillOnPageLoadDefault",
+  "autofillOnPageLoadDefault",
   {
     deserializer: (value: boolean) => value ?? false,
   },
@@ -29,17 +29,17 @@ const AUTO_COPY_TOTP = new KeyDefinition(AUTOFILL_SETTINGS_DISK, "autoCopyTotp",
   deserializer: (value: boolean) => value ?? false,
 });
 
-const AUTO_FILL_ON_PAGE_LOAD_CALLOUT_DISMISSED = new KeyDefinition(
+const AUTOFILL_ON_PAGE_LOAD_CALLOUT_DISMISSED = new KeyDefinition(
   AUTOFILL_SETTINGS_DISK,
-  "autoFillOnPageLoadCalloutIsDismissed",
+  "autofillOnPageLoadCalloutIsDismissed",
   {
     deserializer: (value: boolean) => value ?? false,
   },
 );
 
-const ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY = new KeyDefinition(
+const ACTIVATE_AUTOFILL_ON_PAGE_LOAD_FROM_POLICY = new KeyDefinition(
   AUTOFILL_SETTINGS_DISK_LOCAL,
-  "activateAutoFillOnPageLoadFromPolicy",
+  "activateAutofillOnPageLoadFromPolicy",
   {
     deserializer: (value: boolean) => value ?? false,
   },
@@ -54,62 +54,64 @@ const INLINE_MENU_VISIBILITY = new KeyDefinition(
 );
 
 export abstract class AutofillSettingsServiceAbstraction {
-  autofillOnLoad$: Observable<boolean>;
+  autofillOnPageLoad$: Observable<boolean>;
   setAutofillOnPageLoad: (newValue: boolean) => Promise<void>;
-  autofillOnLoadDefault$: Observable<boolean>;
+  autofillOnPageLoadDefault$: Observable<boolean>;
   setAutofillOnPageLoadDefault: (newValue: boolean) => Promise<void>;
   autoCopyTotp$: Observable<boolean>;
   setAutoCopyTotp: (newValue: boolean) => Promise<void>;
-  autoFillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
-  setAutoFillOnPageLoadCalloutIsDismissed: (newValue: boolean) => Promise<void>;
-  activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
-  setActivateAutoFillOnPageLoadFromPolicy: (newValue: boolean) => Promise<void>;
+  autofillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
+  setAutofillOnPageLoadCalloutIsDismissed: (newValue: boolean) => Promise<void>;
+  activateAutofillOnPageLoadFromPolicy$: Observable<boolean>;
+  setActivateAutofillOnPageLoadFromPolicy: (newValue: boolean) => Promise<void>;
   inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
   setInlineMenuVisibility: (newValue: InlineMenuVisibilitySetting) => Promise<void>;
 }
 
 export class AutofillSettingsService implements AutofillSettingsServiceAbstraction {
-  private autofillOnLoadState: ActiveUserState<boolean>;
-  readonly autofillOnLoad$: Observable<boolean>;
+  private autofillOnPageLoadState: ActiveUserState<boolean>;
+  readonly autofillOnPageLoad$: Observable<boolean>;
 
-  private autofillOnLoadDefaultState: ActiveUserState<boolean>;
-  readonly autofillOnLoadDefault$: Observable<boolean>;
+  private autofillOnPageLoadDefaultState: ActiveUserState<boolean>;
+  readonly autofillOnPageLoadDefault$: Observable<boolean>;
 
   private autoCopyTotpState: ActiveUserState<boolean>;
   readonly autoCopyTotp$: Observable<boolean>;
 
-  private autoFillOnPageLoadCalloutIsDismissedState: ActiveUserState<boolean>;
-  readonly autoFillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
+  private autofillOnPageLoadCalloutIsDismissedState: ActiveUserState<boolean>;
+  readonly autofillOnPageLoadCalloutIsDismissed$: Observable<boolean>;
 
-  private activateAutoFillOnPageLoadFromPolicyState: ActiveUserState<boolean>;
-  readonly activateAutoFillOnPageLoadFromPolicy$: Observable<boolean>;
+  private activateAutofillOnPageLoadFromPolicyState: ActiveUserState<boolean>;
+  readonly activateAutofillOnPageLoadFromPolicy$: Observable<boolean>;
 
   private inlineMenuVisibilityState: GlobalState<InlineMenuVisibilitySetting>;
   readonly inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
 
   constructor(private stateProvider: StateProvider) {
-    this.autofillOnLoadState = this.stateProvider.getActive(AUTOFILL_ON_PAGE_LOAD);
-    this.autofillOnLoad$ = this.autofillOnLoadState.state$.pipe(map((x) => x ?? false));
+    this.autofillOnPageLoadState = this.stateProvider.getActive(AUTOFILL_ON_PAGE_LOAD);
+    this.autofillOnPageLoad$ = this.autofillOnPageLoadState.state$.pipe(map((x) => x ?? false));
 
-    this.autofillOnLoadDefaultState = this.stateProvider.getActive(AUTOFILL_ON_PAGE_LOAD_DEFAULT);
-    this.autofillOnLoadDefault$ = this.autofillOnLoadDefaultState.state$.pipe(
+    this.autofillOnPageLoadDefaultState = this.stateProvider.getActive(
+      AUTOFILL_ON_PAGE_LOAD_DEFAULT,
+    );
+    this.autofillOnPageLoadDefault$ = this.autofillOnPageLoadDefaultState.state$.pipe(
       map((x) => x ?? true),
     );
 
     this.autoCopyTotpState = this.stateProvider.getActive(AUTO_COPY_TOTP);
     this.autoCopyTotp$ = this.autoCopyTotpState.state$.pipe(map((x) => x ?? false));
 
-    this.autoFillOnPageLoadCalloutIsDismissedState = this.stateProvider.getActive(
-      AUTO_FILL_ON_PAGE_LOAD_CALLOUT_DISMISSED,
+    this.autofillOnPageLoadCalloutIsDismissedState = this.stateProvider.getActive(
+      AUTOFILL_ON_PAGE_LOAD_CALLOUT_DISMISSED,
     );
-    this.autoFillOnPageLoadCalloutIsDismissed$ =
-      this.autoFillOnPageLoadCalloutIsDismissedState.state$.pipe(map((x) => x ?? false));
+    this.autofillOnPageLoadCalloutIsDismissed$ =
+      this.autofillOnPageLoadCalloutIsDismissedState.state$.pipe(map((x) => x ?? false));
 
-    this.activateAutoFillOnPageLoadFromPolicyState = this.stateProvider.getActive(
-      ACTIVATE_AUTO_FILL_ON_PAGE_LOAD_FROM_POLICY,
+    this.activateAutofillOnPageLoadFromPolicyState = this.stateProvider.getActive(
+      ACTIVATE_AUTOFILL_ON_PAGE_LOAD_FROM_POLICY,
     );
-    this.activateAutoFillOnPageLoadFromPolicy$ =
-      this.activateAutoFillOnPageLoadFromPolicyState.state$.pipe(map((x) => x ?? false));
+    this.activateAutofillOnPageLoadFromPolicy$ =
+      this.activateAutofillOnPageLoadFromPolicyState.state$.pipe(map((x) => x ?? false));
 
     this.inlineMenuVisibilityState = this.stateProvider.getGlobal(INLINE_MENU_VISIBILITY);
     this.inlineMenuVisibility$ = this.inlineMenuVisibilityState.state$.pipe(
@@ -118,23 +120,23 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
   }
 
   async setAutofillOnPageLoad(newValue: boolean): Promise<void> {
-    await this.autofillOnLoadState.update(() => newValue);
+    await this.autofillOnPageLoadState.update(() => newValue);
   }
 
   async setAutofillOnPageLoadDefault(newValue: boolean): Promise<void> {
-    await this.autofillOnLoadDefaultState.update(() => newValue);
+    await this.autofillOnPageLoadDefaultState.update(() => newValue);
   }
 
   async setAutoCopyTotp(newValue: boolean): Promise<void> {
     await this.autoCopyTotpState.update(() => newValue);
   }
 
-  async setAutoFillOnPageLoadCalloutIsDismissed(newValue: boolean): Promise<void> {
-    await this.autoFillOnPageLoadCalloutIsDismissedState.update(() => newValue);
+  async setAutofillOnPageLoadCalloutIsDismissed(newValue: boolean): Promise<void> {
+    await this.autofillOnPageLoadCalloutIsDismissedState.update(() => newValue);
   }
 
-  async setActivateAutoFillOnPageLoadFromPolicy(newValue: boolean): Promise<void> {
-    await this.activateAutoFillOnPageLoadFromPolicyState.update(() => newValue);
+  async setActivateAutofillOnPageLoadFromPolicy(newValue: boolean): Promise<void> {
+    await this.activateAutofillOnPageLoadFromPolicyState.update(() => newValue);
   }
 
   async setInlineMenuVisibility(newValue: InlineMenuVisibilitySetting): Promise<void> {

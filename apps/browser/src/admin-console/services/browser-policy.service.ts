@@ -27,16 +27,16 @@ export class BrowserPolicyService extends PolicyService {
     this._policies.pipe(this.handleActivateAutofillPolicy.bind(this)).subscribe();
   }
 
-  private async getActivateAutoFillOnPageLoadFromPolicy(): Promise<boolean> {
-    return await firstValueFrom(this.autofillSettingsService.activateAutoFillOnPageLoadFromPolicy$);
+  private async getActivateAutofillOnPageLoadFromPolicy(): Promise<boolean> {
+    return await firstValueFrom(this.autofillSettingsService.activateAutofillOnPageLoadFromPolicy$);
   }
 
-  private async setActivateAutoFillOnPageLoadFromPolicy(autofillEnabled: boolean): Promise<void> {
-    this.autofillSettingsService.setActivateAutoFillOnPageLoadFromPolicy(!autofillEnabled);
+  private async setActivateAutofillOnPageLoadFromPolicy(isEnabled: boolean): Promise<void> {
+    this.autofillSettingsService.setActivateAutofillOnPageLoadFromPolicy(!isEnabled);
   }
 
-  private async getAutofillOnLoad(): Promise<boolean> {
-    return await firstValueFrom(this.autofillSettingsService.autofillOnLoad$);
+  private async getAutofillOnPageLoad(): Promise<boolean> {
+    return await firstValueFrom(this.autofillSettingsService.autofillOnPageLoad$);
   }
 
   /**
@@ -48,14 +48,14 @@ export class BrowserPolicyService extends PolicyService {
       map((policies) => policies.find((p) => p.type == PolicyType.ActivateAutofill && p.enabled)),
       filter((p) => p != null),
       switchMap(async (_) => [
-        await this.getActivateAutoFillOnPageLoadFromPolicy(),
-        await this.getAutofillOnLoad(),
+        await this.getActivateAutofillOnPageLoadFromPolicy(),
+        await this.getAutofillOnPageLoad(),
       ]),
       tap(([activated, autofillEnabled]) => {
         if (activated === undefined) {
           // FIXME: Verify that this floating promise is intentional. If it is, add an explanatory comment and ensure there is proper error handling.
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          this.setActivateAutoFillOnPageLoadFromPolicy(!autofillEnabled);
+          this.setActivateAutofillOnPageLoadFromPolicy(!autofillEnabled);
         }
       }),
     );

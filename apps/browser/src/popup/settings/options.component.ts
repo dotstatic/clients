@@ -83,11 +83,11 @@ export class OptionsComponent implements OnInit {
 
   async ngOnInit() {
     this.enableAutoFillOnPageLoad = await firstValueFrom(
-      this.autofillSettingsService.autofillOnLoad$,
+      this.autofillSettingsService.autofillOnPageLoad$,
     );
 
     this.autoFillOnPageLoadDefault = await firstValueFrom(
-      this.autofillSettingsService.autofillOnLoadDefault$,
+      this.autofillSettingsService.autofillOnPageLoadDefault$,
     );
 
     this.enableAddLoginNotification = !(await this.stateService.getDisableAddLoginNotification());

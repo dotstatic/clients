@@ -124,9 +124,9 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
       .subscribe(() => this.searchVault());
 
     // activate autofill on page load if policy is set
-    if (await firstValueFrom(this.autofillSettingsService.activateAutoFillOnPageLoadFromPolicy$)) {
+    if (await firstValueFrom(this.autofillSettingsService.activateAutofillOnPageLoadFromPolicy$)) {
       await this.autofillSettingsService.setAutofillOnPageLoad(true);
-      await this.autofillSettingsService.setActivateAutoFillOnPageLoadFromPolicy(false);
+      await this.autofillSettingsService.setActivateAutofillOnPageLoadFromPolicy(false);
       this.platformUtilsService.showToast(
         "info",
         null,
@@ -304,7 +304,7 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
   }
 
   async dismissCallout() {
-    await this.autofillSettingsService.setAutoFillOnPageLoadCalloutIsDismissed(true);
+    await this.autofillSettingsService.setAutofillOnPageLoadCalloutIsDismissed(true);
     this.showHowToAutofill = false;
   }
 
@@ -316,8 +316,8 @@ export class CurrentTabComponent implements OnInit, OnDestroy {
     this.showHowToAutofill =
       this.loginCiphers.length > 0 &&
       inlineMenuVisibilityIsOff &&
-      !(await firstValueFrom(this.autofillSettingsService.autofillOnLoad$)) &&
-      !(await firstValueFrom(this.autofillSettingsService.autoFillOnPageLoadCalloutIsDismissed$));
+      !(await firstValueFrom(this.autofillSettingsService.autofillOnPageLoad$)) &&
+      !(await firstValueFrom(this.autofillSettingsService.autofillOnPageLoadCalloutIsDismissed$));
 
     if (this.showHowToAutofill) {
       const autofillCommand = await this.platformUtilsService.getAutofillKeyboardShortcut();

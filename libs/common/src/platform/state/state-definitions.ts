@@ -34,7 +34,7 @@ export const POLICIES_MEMORY = new StateDefinition("policies", "memory");
 export const PROVIDERS_DISK = new StateDefinition("providers", "disk");
 //
 
-export const AUTOFILL_SETTINGS_DISK = new StateDefinition("autoFillSettings", "disk");
-export const AUTOFILL_SETTINGS_DISK_LOCAL = new StateDefinition("autoFillSettingsLocal", "disk", {
+export const AUTOFILL_SETTINGS_DISK = new StateDefinition("autofillSettings", "disk");
+export const AUTOFILL_SETTINGS_DISK_LOCAL = new StateDefinition("autofillSettingsLocal", "disk", {
   web: "disk-local",
 });

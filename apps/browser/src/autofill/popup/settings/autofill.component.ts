@@ -89,11 +89,11 @@ export class AutofillComponent implements OnInit {
     );
 
     this.enableAutoFillOnPageLoad = await firstValueFrom(
-      this.autofillSettingsService.autofillOnLoad$,
+      this.autofillSettingsService.autofillOnPageLoad$,
     );
 
     this.autoFillOnPageLoadDefault = await firstValueFrom(
-      this.autofillSettingsService.autofillOnLoadDefault$,
+      this.autofillSettingsService.autofillOnPageLoadDefault$,
     );
 
     const defaultUriMatch = await this.stateService.getDefaultUriMatch();
