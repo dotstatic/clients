@@ -640,6 +640,36 @@ describe("OverlayBackground", () => {
         });
       });
 
+      describe("getAutofillOverlayVisibility message handler", () => {
+        beforeEach(() => {
+          jest
+            .spyOn(overlayBackground as any, "getOverlayVisibility")
+            .mockResolvedValue(AutofillOverlayVisibility.OnFieldFocus);
+        });
+
+        it("will set the overlayVisibility property", async () => {
+          sendExtensionRuntimeMessage({ command: "getAutofillOverlayVisibility" });
+          await flushPromises();
+
+          expect(await overlayBackground["getOverlayVisibility"]()).toBe(
+            AutofillOverlayVisibility.OnFieldFocus,
+          );
+        });
+
+        it("returns the overlayVisibility property", async () => {
+          const sendMessageSpy = jest.fn();
+
+          sendExtensionRuntimeMessage(
+            { command: "getAutofillOverlayVisibility" },
+            undefined,
+            sendMessageSpy,
+          );
+          await flushPromises();
+
+          expect(sendMessageSpy).toHaveBeenCalledWith(AutofillOverlayVisibility.OnFieldFocus);
+        });
+      });
+
       describe("checkAutofillOverlayFocused message handler", () => {
         beforeEach(() => {
           initOverlayElementPorts();
