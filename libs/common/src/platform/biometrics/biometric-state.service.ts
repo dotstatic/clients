@@ -65,6 +65,8 @@ export abstract class BiometricStateService {
    * @param prompt Whether or not to prompt for biometrics on application start.
    */
   abstract setPromptAutomatically(prompt: boolean): Promise<void>;
+
+  abstract logout(userId: UserId): Promise<void>;
 }
 
 export class DefaultBiometricStateService implements BiometricStateService {
@@ -122,6 +124,11 @@ export class DefaultBiometricStateService implements BiometricStateService {
 
   async logout(userId: UserId): Promise<void> {
     await this.stateProvider.getUser(userId, ENCRYPTED_CLIENT_KEY_HALF).update(() => null);
+    await this.stateProvider
+      .getUser(userId, DISMISSED_REQUIRE_PASSWORD_ON_START_CALLOUT)
+      .update(() => null);
+    await this.stateProvider.getUser(userId, PROMPT_CANCELLED).update(() => null);
+    await this.stateProvider.getUser(userId, PROMPT_AUTOMATICALLY).update(() => null);
   }
 
   async setDismissedRequirePasswordOnStartCallout(): Promise<void> {

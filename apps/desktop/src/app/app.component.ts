@@ -38,7 +38,9 @@ import { MessagingService } from "@bitwarden/common/platform/abstractions/messag
 import { PlatformUtilsService } from "@bitwarden/common/platform/abstractions/platform-utils.service";
 import { StateService } from "@bitwarden/common/platform/abstractions/state.service";
 import { SystemService } from "@bitwarden/common/platform/abstractions/system.service";
+import { BiometricStateService } from "@bitwarden/common/platform/biometrics/biometric-state.service";
 import { PasswordGenerationServiceAbstraction } from "@bitwarden/common/tools/generator/password";
+import { UserId } from "@bitwarden/common/types/guid";
 import { CipherService } from "@bitwarden/common/vault/abstractions/cipher.service";
 import { CollectionService } from "@bitwarden/common/vault/abstractions/collection.service";
 import { InternalFolderService } from "@bitwarden/common/vault/abstractions/folder/folder.service.abstraction";
@@ -146,6 +148,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private userVerificationService: UserVerificationService,
     private configService: ConfigServiceAbstraction,
     private dialogService: DialogService,
+    private biometricStateService: BiometricStateService,
   ) {}
 
   ngOnInit() {
@@ -541,6 +544,7 @@ export class AppComponent implements OnInit, OnDestroy {
       await this.vaultTimeoutSettingsService.clear(userBeingLoggedOut);
       await this.policyService.clear(userBeingLoggedOut);
       await this.keyConnectorService.clear();
+      await this.biometricStateService.logout(userBeingLoggedOut as UserId);
 
       preLogoutActiveUserId = this.activeUserId;
       await this.stateService.clean({ userId: userBeingLoggedOut });
