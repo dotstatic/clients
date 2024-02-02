@@ -1,9 +1,11 @@
-import { Observable, map } from "rxjs";
+import { filter, firstValueFrom, map, Observable, switchMap, tap } from "rxjs";
 
 import {
   AutofillOverlayVisibility,
   InlineMenuVisibilitySetting,
 } from "../../../../../apps/browser/src/autofill/utils/autofill-overlay.enum";
+import { PolicyType } from "../../admin-console/enums/index";
+import { Policy } from "../../admin-console/models/domain/policy";
 import {
   AUTOFILL_SETTINGS_DISK,
   AUTOFILL_SETTINGS_DISK_LOCAL,
@@ -66,6 +68,7 @@ export abstract class AutofillSettingsServiceAbstraction {
   setActivateAutofillOnPageLoadFromPolicy: (newValue: boolean) => Promise<void>;
   inlineMenuVisibility$: Observable<InlineMenuVisibilitySetting>;
   setInlineMenuVisibility: (newValue: InlineMenuVisibilitySetting) => Promise<void>;
+  handleActivateAutofillPolicy: (policies: Observable<Policy[]>) => Observable<boolean[]>;
 }
 
 export class AutofillSettingsService implements AutofillSettingsServiceAbstraction {
@@ -141,5 +144,27 @@ export class AutofillSettingsService implements AutofillSettingsServiceAbstracti
 
   async setInlineMenuVisibility(newValue: InlineMenuVisibilitySetting): Promise<void> {
     await this.inlineMenuVisibilityState.update(() => newValue);
+  }
+
+  /**
+   * If the ActivateAutofill policy is enabled, save a flag indicating if we need to
+   * enable Autofill on page load.
+   */
+  handleActivateAutofillPolicy(policies$: Observable<Policy[]>): Observable<boolean[]> {
+    return policies$.pipe(
+      map((policies) => policies.find((p) => p.type == PolicyType.ActivateAutofill && p.enabled)),
+      filter((p) => p != null),
+      switchMap(async (_) => [
+        await firstValueFrom(this.activateAutofillOnPageLoadFromPolicy$),
+        await firstValueFrom(this.autofillOnPageLoad$),
+      ]),
+      tap(([activated, autofillEnabled]) => {
+        if (activated === undefined) {
+          // FIXME: Verify that this floating promise is intentional. If it is, add an explanatory comment and ensure there is proper error handling.
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          this.setActivateAutofillOnPageLoadFromPolicy(!autofillEnabled);
+        }
+      }),
+    );
   }
 }
