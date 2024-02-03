@@ -1,5 +1,6 @@
-import { Component, Inject, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, Inject, NgZone, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
+import { Subscription } from "rxjs";
 
 import { TwoFactorComponent as BaseTwoFactorComponent } from "@bitwarden/angular/auth/components/two-factor.component";
 import { WINDOW } from "@bitwarden/angular/services/injection-tokens";
@@ -10,6 +11,7 @@ import { LoginService } from "@bitwarden/common/auth/abstractions/login.service"
 import { TwoFactorService } from "@bitwarden/common/auth/abstractions/two-factor.service";
 import { TwoFactorProviderType } from "@bitwarden/common/auth/enums/two-factor-provider-type";
 import { AppIdService } from "@bitwarden/common/platform/abstractions/app-id.service";
+import { BroadcasterService } from "@bitwarden/common/platform/abstractions/broadcaster.service";
 import { ConfigServiceAbstraction } from "@bitwarden/common/platform/abstractions/config/config.service.abstraction";
 import { EnvironmentService } from "@bitwarden/common/platform/abstractions/environment.service";
 import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
@@ -19,6 +21,8 @@ import { StateService } from "@bitwarden/common/platform/abstractions/state.serv
 import { SyncService } from "@bitwarden/common/vault/abstractions/sync/sync.service.abstraction";
 
 import { TwoFactorOptionsComponent } from "./two-factor-options.component";
+
+const BroadcasterSubscriptionId = "TwoFactorComponent";
 
 @Component({
   selector: "app-two-factor",
@@ -39,8 +43,10 @@ export class TwoFactorComponent extends BaseTwoFactorComponent {
     platformUtilsService: PlatformUtilsService,
     syncService: SyncService,
     environmentService: EnvironmentService,
+    private broadcasterService: BroadcasterService,
     private modalService: ModalService,
     stateService: StateService,
+    private ngZone: NgZone,
     route: ActivatedRoute,
     logService: LogService,
     twoFactorService: TwoFactorService,
@@ -106,6 +112,24 @@ export class TwoFactorComponent extends BaseTwoFactorComponent {
     if (this.captchaSiteKey) {
       const content = document.getElementById("content") as HTMLDivElement;
       content.setAttribute("style", "width:335px");
+    }
+  }
+
+  duoResultSubscription: Subscription;
+
+  protected override setupDuoResultListener() {
+    if (!this.duoResultSubscription) {
+      this.broadcasterService.subscribe(BroadcasterSubscriptionId, async (message: any) => {
+        this.ngZone.run(async () => {
+          switch (message.command) {
+            case "duoCallback":
+              this.token = message.code;
+              this.submit();
+              break;
+            default:
+          }
+        });
+      });
     }
   }
 }
